@@ -98,6 +98,11 @@ hi TabLineSel  cterm=none ctermfg=black ctermbg = white
 hi Visual      ctermfg=black
 hi Search      ctermfg=black ctermbg=yellow
 
+hi DiffAdd     ctermfg=black
+hi DiffChange  ctermfg=black
+hi DiffDelete  ctermfg=black
+hi DiffText    ctermfg=black
+
 " create directory if needed
 if !isdirectory($HOME.'/.vim/files') && exists('*mkdir')
   call mkdir($HOME.'/.vim/files')
