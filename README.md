@@ -1,8 +1,8 @@
 # Dotfiles
 
 ### Requirement
-vim 8
-tmux 2.4
+* vim 8
+* tmux 2.4
 
 ### Installation
 `./install.sh` will install vimrc, bashrc, tmux.conf and gitconfig.
