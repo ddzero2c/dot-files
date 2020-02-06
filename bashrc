@@ -16,7 +16,7 @@ function git_branch {
 }
 
 # simple prompt
-PS1='\u@\[\033[01;34m\]\h\[\033[00m\]:\W\033[1;33m$(git_branch)\033[00m \$ '
+PS1='\u@\[\033[01;34m\]\h\[\033[00m\]:\W\[\033[1;33m\]$(git_branch)\[\033[00m\] \$ '
 IP=`who am i | awk '{print $NF}' | sed -e 's/[()]//g'`
 HISTTIMEFORMAT="$USER@$IP %F %T "
 
