@@ -19,6 +19,8 @@ call vundle#end()
 filetype plugin indent on
 autocmd FileType yaml,yml setlocal ts=2 sts=2 sw=2 expandtab
 
+set clipboard+=unnamed
+
 " for plugin
 let g:EasyMotion_smartcase = 1
 
@@ -29,6 +31,13 @@ map <leader>r :source ~/.vimrc<cr>
 map f <leader><leader>s
 
 inoremap <C-c> <Esc>
+inoremap <C-f> <Right>
+inoremap <C-b> <Left>
+
+nmap <leader>gd <Plug>(coc-definition)
+nmap <leader>gy <Plug>(coc-type-definition)
+nmap <leader>gi <Plug>(coc-implementation)
+nmap <leader>gr <Plug>(coc-references)
 
 " fix tmux background issue
 syntax on
