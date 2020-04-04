@@ -7,6 +7,7 @@ alias ll='ls -ahlF'
 alias g='grep --color=auto'
 alias t='tmux -2 -u'
 alias v='vim -p'
+alias f='vim +Defx'
 alias d='docker'
 alias vdf='vimdiff'
 

@@ -9,6 +9,9 @@ for f in $dotfiles; do
 done
 
 python3 -m pip install pynvim
+brew tap homebrew/cask-fonts
+brew cask install font-hack-nerd-font
+# manually change font for iTerminal
 
 curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
