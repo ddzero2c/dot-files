@@ -8,7 +8,7 @@ for f in $dotfiles; do
     cp $PWD/$f ~/.$f
 done
 
-python3 -m pip install pynvim
+curl -sL install-node.now.sh/lts | bash
 brew tap homebrew/cask-fonts
 brew cask install font-hack-nerd-font
 # manually change font for iTerminal

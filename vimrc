@@ -9,20 +9,16 @@ Plug 'psliwka/vim-smoothie'
 
 " GIT
 Plug 'tpope/vim-fugitive'
-Plug 'mhinz/vim-signify', { 'branch': 'legacy' }
 
 " IDE like plugins
-Plug 'Shougo/deoplete.nvim'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'Shougo/denite.nvim'
 Plug 'Shougo/defx.nvim'
 Plug 'kristijanhusak/defx-icons'
-Plug 'Shougo/echodoc.vim'
 Plug 'roxma/nvim-yarp'
 Plug 'roxma/vim-hug-neovim-rpc'
-Plug 'tbodt/deoplete-tabnine', { 'do': './install.sh' }
 
 " omni complete sources
-Plug 'deoplete-plugins/deoplete-jedi'
 Plug 'artur-shaik/vim-javacomplete2'
 
 " syntax
@@ -37,33 +33,16 @@ inoremap <C-c> <Esc>
 inoremap <C-f> <Right>
 inoremap <C-b> <Left>
 
+" tab move
 map <C-h> <C-w>h
 map <C-l> <C-w>l
 map <C-j> <C-w>j
 map <C-k> <C-w>k
 
-" tabnine
-call deoplete#custom#var('tabnine', {
-\ 'line_limit': 100,
-\ 'max_num_results': 2,
-\ })
-call deoplete#custom#source('tabnine', 'rank', 50)
-
-" deoplete
-let g:deoplete#enable_at_startup = 1
-let g:deoplete#ignore_sources = {}
-let g:deoplete#ignore_sources._ = ['javacomplete2']
-call deoplete#custom#option('auto_complete_delay', 120)
-
 " filetype
 filetype plugin indent on
 autocmd FileType yaml,yml setlocal ts=2 sts=2 sw=2 expandtab
-autocmd FileType java setlocal omnifunc=javacomplete#Complete
-set completeopt-=preview
-
-" echodoc
-set cmdheight=2
-let g:echodoc_enable_at_startup = 1
+autocmd Filetype json let g:indentLine_enabled = 0
 
 " system clipboard
 set clipboard+=unnamed
@@ -206,11 +185,11 @@ endtry
 
 " === Denite shorcuts === "
 "   ;         - Browser currently open buffers
-"   <leader>g - Search current directory for occurences of given term and close window if no results
-"   <leader>j - Search current directory for occurences of word under cursor
+"   <leader>G - Search current directory for occurences of given term and close window if no results
+"   <leader>g - Search current directory for occurences of word under cursor
 nmap ; :Denite buffer<CR>
-nnoremap <leader>g :<C-u>Denite grep:. -no-empty<CR>
-nnoremap <leader>j :<C-u>DeniteCursorWord grep:.<CR>
+nnoremap <leader>G :<C-u>Denite grep:. -no-empty<CR>
+nnoremap <leader>g :<C-u>DeniteCursorWord grep:.<CR>
 
 " Define mappings while in 'filter' mode
 "   <C-c>         - Switch to normal mode inside of search results
@@ -322,3 +301,13 @@ function! s:defx_my_settings() abort
   nnoremap <silent><buffer><expr> cd
   \ defx#do_action('change_vim_cwd')
 endfunction
+
+" cocnvim
+set hidden
+set nobackup
+set nowritebackup
+set cmdheight=2
+set updatetime=300
+set shortmess+=c
+set signcolumn=yes
+
