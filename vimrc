@@ -33,6 +33,10 @@ inoremap <C-c> <Esc>
 inoremap <C-f> <Right>
 inoremap <C-b> <Left>
 
+" paste without yank
+vnoremap p "_dp
+vnoremap P "_dP
+
 " tab move
 map <C-h> <C-w>h
 map <C-l> <C-w>l
