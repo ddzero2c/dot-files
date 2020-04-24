@@ -12,11 +12,7 @@ Plug 'tpope/vim-fugitive'
 
 " IDE like plugins
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug 'Shougo/denite.nvim'
-Plug 'Shougo/defx.nvim'
-Plug 'kristijanhusak/defx-icons'
-Plug 'roxma/nvim-yarp'
-Plug 'roxma/vim-hug-neovim-rpc'
+Plug 'liuchengxu/vim-clap'
 
 " omni complete sources
 Plug 'artur-shaik/vim-javacomplete2'
@@ -24,6 +20,7 @@ Plug 'artur-shaik/vim-javacomplete2'
 " syntax
 Plug 'martinda/Jenkinsfile-vim-syntax'
 Plug 'rudes/vim-java'
+Plug 'lepture/vim-jinja'
 
 call plug#end()
 
@@ -33,20 +30,41 @@ inoremap <C-c> <Esc>
 inoremap <C-f> <Right>
 inoremap <C-b> <Left>
 
+" vim clap
+nnoremap <leader>g :Clap grep ++query=<cword><cr>
+vnoremap <leader>g :Clap grep ++query=@visual<cr>
+nnoremap <leader>y :Clap yanks<cr>
+let g:clap_theme = 'dark'
+
 " paste without yank
 vnoremap p "_dp
 vnoremap P "_dP
 
+" coc explorer
+nmap <leader>e :CocCommand explorer<cr>
+
 " tab move
-map <C-h> <C-w>h
-map <C-l> <C-w>l
-map <C-j> <C-w>j
-map <C-k> <C-w>k
+map <leader>n gt
+map <leader>p gT
+map <leader>h <C-w>h
+map <leader>l <C-w>l
+map <leader>j <C-w>j
+map <leader>k <C-w>k
 
 " filetype
 filetype plugin indent on
+autocmd FileType jinja,j2,html setlocal ts=2 sts=2 sw=2 expandtab
 autocmd FileType yaml,yml setlocal ts=2 sts=2 sw=2 expandtab
 autocmd Filetype json let g:indentLine_enabled = 0
+
+" cocnvim
+set hidden
+set nobackup
+set nowritebackup
+set cmdheight=2
+set updatetime=300
+set shortmess+=c
+set signcolumn=yes
 
 " system clipboard
 set clipboard+=unnamed
@@ -117,8 +135,8 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 
 " highlights
 hi TabLineFill cterm=none ctermfg=black ctermbg = none
-hi TabLine     cterm=none ctermfg=white ctermbg = none
-hi TabLineSel  cterm=none ctermfg=black ctermbg = white
+hi TabLine     cterm=none ctermfg=grey ctermbg = none
+hi TabLineSel  cterm=none ctermfg=white ctermbg = darkgrey
 hi Visual      ctermfg=black
 hi Search      ctermfg=black ctermbg=yellow
 

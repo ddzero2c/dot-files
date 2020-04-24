@@ -2,6 +2,17 @@
     "diagnostic.errorSign": "X",
     "diagnostic.warningSign": "!",
     "diagnostic.infoSign": ">",
-    "diagnostic.hintSign": ">"
+    "diagnostic.hintSign": ">",
+    "explorer.icon.enableNerdfont": true,
+    "list.normalMappings": {
+        "q": "do:exit"
+    },
+    "list.insertMappings": {
+        "<C-c>": "do:toggleMode"
+    },
+    "[yaml]": {
+        "editor.insertSpaces": "auto",
+        "editor.tabSize": 2
+    }
 }
 
