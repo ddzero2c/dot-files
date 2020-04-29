@@ -11,7 +11,6 @@ done
 curl -sL install-node.now.sh/lts | bash
 brew tap homebrew/cask-fonts
 brew cask install font-inconsolata-nerd-font
-# manually change font for iTerminal
 
 curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim

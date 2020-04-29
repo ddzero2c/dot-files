@@ -13,6 +13,7 @@ Plug 'tpope/vim-fugitive'
 " IDE like plugins
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'liuchengxu/vim-clap'
+Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
 
 " omni complete sources
 Plug 'artur-shaik/vim-javacomplete2'
@@ -30,26 +31,25 @@ inoremap <C-c> <Esc>
 inoremap <C-f> <Right>
 inoremap <C-b> <Left>
 
+" markdown preview
+nmap <leader>mp <Plug>MarkdownPreviewToggle
+
 " vim clap
 nnoremap <leader>g :Clap grep ++query=<cword><cr>
 vnoremap <leader>g :Clap grep ++query=@visual<cr>
 nnoremap <leader>y :Clap yanks<cr>
 let g:clap_theme = 'dark'
 
-" paste without yank
-vnoremap p "_dp
-vnoremap P "_dP
-
 " coc explorer
-nmap <leader>e :CocCommand explorer<cr>
+nmap tt :CocCommand explorer<cr>
 
 " tab move
-map <leader>n gt
-map <leader>p gT
-map <leader>h <C-w>h
-map <leader>l <C-w>l
-map <leader>j <C-w>j
-map <leader>k <C-w>k
+map tn gt
+map tp gT
+map th <C-w>h
+map tl <C-w>l
+map tj <C-w>j
+map tk <C-w>k
 
 " filetype
 filetype plugin indent on
@@ -65,6 +65,7 @@ set cmdheight=2
 set updatetime=300
 set shortmess+=c
 set signcolumn=yes
+set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
 
 " system clipboard
 set clipboard+=unnamed
@@ -137,7 +138,7 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 hi TabLineFill cterm=none ctermfg=black ctermbg = none
 hi TabLine     cterm=none ctermfg=grey ctermbg = none
 hi TabLineSel  cterm=none ctermfg=white ctermbg = darkgrey
-hi Visual      ctermfg=black
+hi Visual      ctermfg=white ctermbg=darkgrey
 hi Search      ctermfg=black ctermbg=yellow
 
 hi DiffAdd     ctermfg=black
@@ -147,12 +148,30 @@ hi DiffText    ctermfg=black
 
 hi SignColumn ctermbg=none
 hi CursorColumn ctermbg=green
-hi Pmenu ctermfg=darkgrey ctermbg=none
+hi FoldColumn ctermbg=none
+hi Folded ctermbg=none
+
+hi Pmenu ctermfg=darkgrey ctermbg=black
+hi PmenuSel ctermfg=white ctermbg=darkgrey
 hi PmenuSbar ctermbg=none
-hi PmenuThumb ctermfg=black ctermbg=darkgrey
+hi PmenuThumb ctermfg=white ctermbg=darkgrey
+
+hi CursorLine cterm=none ctermbg=darkgrey
+
+hi VertSplit cterm=none ctermfg=darkgrey
+hi StatusLine cterm=bold ctermfg=darkgrey ctermbg=none
+hi StatusLineNc cterm=none ctermfg=darkgrey ctermbg=none
+se stl=_ fcs=stl:_,stlnc:_,vert:\|
 
 " create directory if needed
 if !isdirectory($HOME.'/.vim/files') && exists('*mkdir')
   call mkdir($HOME.'/.vim/files')
 endif
+
+" auto remember_folds
+augroup remember_folds
+  autocmd!
+  autocmd BufWinLeave * mkview
+  autocmd BufWinEnter * silent! loadview
+augroup END
 
