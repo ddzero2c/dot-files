@@ -19,9 +19,7 @@ Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
 Plug 'artur-shaik/vim-javacomplete2'
 
 " syntax
-Plug 'martinda/Jenkinsfile-vim-syntax'
-Plug 'rudes/vim-java'
-Plug 'lepture/vim-jinja'
+Plug 'sheerun/vim-polyglot'
 
 call plug#end()
 
@@ -30,15 +28,38 @@ map <leader>r :source ~/.vimrc<cr>
 inoremap <C-c> <Esc>
 inoremap <C-f> <Right>
 inoremap <C-b> <Left>
+inoremap <C-a> <Home>
+inoremap <C-e> <End>
 
 " markdown preview
 nmap <leader>mp <Plug>MarkdownPreviewToggle
 
-" vim clap
-nnoremap <leader>g :Clap grep ++query=<cword><cr>
-vnoremap <leader>g :Clap grep ++query=@visual<cr>
-nnoremap <leader>y :Clap yanks<cr>
-let g:clap_theme = 'dark'
+vnoremap <leader>g :<C-u>call <SID>GrepFromSelected(visualmode())<CR>
+nnoremap <leader>g :<C-u>CocList grep<CR>
+nnoremap <silent> <leader>n  :<C-u>CocNext<CR>
+nnoremap <silent> <leader>p  :<C-u>CocPrev<CR>>>>
+nnoremap <silent> ;  :<C-u>CocListResume<CR>
+
+function! s:GrepFromSelected(type)
+  let saved_unnamed_register = @@
+  if a:type ==# 'v'
+    normal! `<v`>y
+  elseif a:type ==# 'char'
+    normal! `[v`]y
+  else
+    return
+  endif
+  let word = substitute(@@, '\n$', '', 'g')
+  let word = escape(word, '| ')
+  let @@ = saved_unnamed_register
+  execute 'CocList grep '.word
+endfunction
+
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
 
 " coc explorer
 nmap tt :CocCommand explorer<cr>
@@ -53,9 +74,11 @@ map tk <C-w>k
 
 " filetype
 filetype plugin indent on
-autocmd FileType jinja,j2,html setlocal ts=2 sts=2 sw=2 expandtab
+autocmd FileType jinja,j2 setlocal ts=2 sts=2 sw=2 expandtab
 autocmd FileType yaml,yml setlocal ts=2 sts=2 sw=2 expandtab
+autocmd FileType javascript setlocal ts=2 sts=2 sw=2 expandtab
 autocmd Filetype json let g:indentLine_enabled = 0
+let g:polyglot_disabled = ['markdown']
 
 " cocnvim
 set hidden
@@ -72,7 +95,7 @@ set clipboard+=unnamed
 
 " easymotion
 let g:EasyMotion_smartcase = 1
-map f <leader><leader>s
+map f <Plug>(easymotion-overwin-f)
 
 " fix tmux background issue
 syntax on
@@ -151,10 +174,10 @@ hi CursorColumn ctermbg=green
 hi FoldColumn ctermbg=none
 hi Folded ctermbg=none
 
-hi Pmenu ctermfg=darkgrey ctermbg=black
-hi PmenuSel ctermfg=white ctermbg=darkgrey
-hi PmenuSbar ctermbg=none
-hi PmenuThumb ctermfg=white ctermbg=darkgrey
+hi Pmenu cterm=reverse
+hi PmenuSel cterm=reverse
+hi PmenuSbar cterm=reverse
+hi PmenuThumb cterm=reverse
 
 hi CursorLine cterm=none ctermbg=darkgrey
 
@@ -168,10 +191,4 @@ if !isdirectory($HOME.'/.vim/files') && exists('*mkdir')
   call mkdir($HOME.'/.vim/files')
 endif
 
-" auto remember_folds
-augroup remember_folds
-  autocmd!
-  autocmd BufWinLeave * mkview
-  autocmd BufWinEnter * silent! loadview
-augroup END
 

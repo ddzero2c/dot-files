@@ -7,15 +7,14 @@ alias ll='ls -ahlF'
 alias g='grep --color=auto'
 alias t='tmux -2 -u'
 alias v='vim -p'
-alias f='vim +Defx'
 alias d='docker'
 alias vdf='vimdiff'
 
 # git branch
 function git_branch {
     ref=$(git symbolic-ref HEAD 2> /dev/null) || return;
-    mail=$(git config --get user.email 2> /dev/null) || return;
-    echo "("${ref#refs/heads/}\|${mail}") ";
+    #mail=$(git config --get user.email 2> /dev/null) || return;
+    echo "("${ref#refs/heads/}") ";
 }
 
 [ -f /etc/bash_completion ] && . /etc/bash_completion

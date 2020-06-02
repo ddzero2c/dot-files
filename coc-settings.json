@@ -4,12 +4,16 @@
     "diagnostic.infoSign": ">",
     "diagnostic.hintSign": ">",
     "explorer.icon.enableNerdfont": true,
+    "coc.preferences.currentFunctionSymbolAutoUpdate": true,
     "list.normalMappings": {
         "q": "do:exit"
     },
     "list.insertMappings": {
-        "<C-c>": "do:toggleMode"
+        "<C-c>": "do:exit", 
+        "<C-t>": "action:tabe"
     },
+    "yaml.format.enable": true,
+    "yaml.format.singleQuote": true,
     "[yaml]": {
         "editor.insertSpaces": "auto",
         "editor.tabSize": 2
