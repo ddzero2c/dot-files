@@ -39,3 +39,10 @@ LANG=en_US.UTF-8
 LANGUAGE=en:el
 LC_ALL=en_US.UTF-8
 
+LC_COLLATE=en_US.UTF-8
+
+export FZF_DEFAULT_COMMAND='rg --files'
+f() (
+  IFS=$'\n' files=($(fzf --query="$1" --multi --select-1 --exit-0))
+  [[ -n "$files" ]] && ${EDITOR:-vim} "${files[@]}"
+)

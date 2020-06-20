@@ -3,6 +3,7 @@
     "diagnostic.warningSign": "!",
     "diagnostic.infoSign": ">",
     "diagnostic.hintSign": ">",
+    "javascript.suggestionActions.enabled": false,
     "explorer.icon.enableNerdfont": true,
     "coc.preferences.currentFunctionSymbolAutoUpdate": true,
     "list.normalMappings": {

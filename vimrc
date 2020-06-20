@@ -14,6 +14,8 @@ Plug 'tpope/vim-fugitive'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'liuchengxu/vim-clap'
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() } }
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
 
 " omni complete sources
 Plug 'artur-shaik/vim-javacomplete2'
@@ -21,7 +23,12 @@ Plug 'artur-shaik/vim-javacomplete2'
 " syntax
 Plug 'sheerun/vim-polyglot'
 
+" colorscheme
+Plug 'jeffkreeftmeijer/vim-dim'
+
 call plug#end()
+
+colorscheme dim
 
 let mapleader=","
 map <leader>r :source ~/.vimrc<cr>
@@ -34,32 +41,75 @@ inoremap <C-e> <End>
 " markdown preview
 nmap <leader>mp <Plug>MarkdownPreviewToggle
 
-vnoremap <leader>g :<C-u>call <SID>GrepFromSelected(visualmode())<CR>
-nnoremap <leader>g :<C-u>CocList grep<CR>
-nnoremap <silent> <leader>n  :<C-u>CocNext<CR>
-nnoremap <silent> <leader>p  :<C-u>CocPrev<CR>>>>
-nnoremap <silent> ;  :<C-u>CocListResume<CR>
-
-function! s:GrepFromSelected(type)
-  let saved_unnamed_register = @@
-  if a:type ==# 'v'
-    normal! `<v`>y
-  elseif a:type ==# 'char'
-    normal! `[v`]y
-  else
-    return
-  endif
-  let word = substitute(@@, '\n$', '', 'g')
-  let word = escape(word, '| ')
-  let @@ = saved_unnamed_register
-  execute 'CocList grep '.word
-endfunction
+" search
+nnoremap <leader>g :<C-u>Rg <CR>
+nnoremap <leader>G :<C-u>Ag <CR>
+nnoremap <leader>t :<C-u>Files <CR>
+nnoremap <silent> ; :<C-u>:Buffer<CR>
 
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
 
+" synbol
+nmap <leader>rn <Plug>(coc-rename)
+autocmd CursorHold * silent call CocActionAsync('highlight')
+set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
+
+" Formatting selected code.
+command! -nargs=0 Prettier :CocCommand prettier.formatFile
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
+augroup mygroup
+  autocmd!
+  " Setup formatexpr specified filetype(s).
+  autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
+  " Update signature help on jump placeholder.
+  autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
+augroup end
+
+" Use K to show documentation in preview window.
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  else
+    call CocAction('doHover')
+  endif
+endfunction
+
+" Use `[g` and `]g` to navigate diagnostics
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+" Applying codeAction to the selected region.
+" Example: `<leader>aap` for current paragraph
+xmap <leader>a  <Plug>(coc-codeaction-selected)
+nmap <leader>a  <Plug>(coc-codeaction-selected)
+
+" Remap keys for applying codeAction to the current buffer.
+nmap <leader>ac  <Plug>(coc-codeaction)
+" Apply AutoFix to problem on the current line.
+nmap <leader>qf  <Plug>(coc-fix-current)
+
+" Map function and class text objects
+" NOTE: Requires 'textDocument.documentSymbol' support from the language server.
+xmap if <Plug>(coc-funcobj-i)
+omap if <Plug>(coc-funcobj-i)
+xmap af <Plug>(coc-funcobj-a)
+omap af <Plug>(coc-funcobj-a)
+xmap ic <Plug>(coc-classobj-i)
+omap ic <Plug>(coc-classobj-i)
+xmap ac <Plug>(coc-classobj-a)
+omap ac <Plug>(coc-classobj-a)
+
+" Use CTRL-S for selections ranges.
+" Requires 'textDocument/selectionRange' support of LS, ex: coc-tsserver
+nmap <silent> <C-s> <Plug>(coc-range-select)
+xmap <silent> <C-s> <Plug>(coc-range-select)
+
+command! -nargs=0 OR   :call     CocAction('runCommand', 'editor.action.organizeImport')
 
 " coc explorer
 nmap tt :CocCommand explorer<cr>
@@ -161,29 +211,12 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 hi TabLineFill cterm=none ctermfg=black ctermbg = none
 hi TabLine     cterm=none ctermfg=grey ctermbg = none
 hi TabLineSel  cterm=none ctermfg=white ctermbg = darkgrey
-hi Visual      ctermfg=white ctermbg=darkgrey
-hi Search      ctermfg=black ctermbg=yellow
-
-hi DiffAdd     ctermfg=black
-hi DiffChange  ctermfg=black
-hi DiffDelete  ctermfg=black
-hi DiffText    ctermfg=black
 
 hi SignColumn ctermbg=none
 hi CursorColumn ctermbg=green
 hi FoldColumn ctermbg=none
 hi Folded ctermbg=none
-
-hi Pmenu cterm=reverse
-hi PmenuSel cterm=reverse
-hi PmenuSbar cterm=reverse
-hi PmenuThumb cterm=reverse
-
 hi CursorLine cterm=none ctermbg=darkgrey
-
-hi VertSplit cterm=none ctermfg=darkgrey
-hi StatusLine cterm=bold ctermfg=darkgrey ctermbg=none
-hi StatusLineNc cterm=none ctermfg=darkgrey ctermbg=none
 se stl=_ fcs=stl:_,stlnc:_,vert:\|
 
 " create directory if needed
