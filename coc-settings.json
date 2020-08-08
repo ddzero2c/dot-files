@@ -1,23 +1,11 @@
 {
-    "diagnostic.errorSign": "X",
-    "diagnostic.warningSign": "!",
-    "diagnostic.infoSign": ">",
-    "diagnostic.hintSign": ">",
-    "javascript.suggestionActions.enabled": false,
-    "explorer.icon.enableNerdfont": true,
-    "coc.preferences.currentFunctionSymbolAutoUpdate": true,
-    "list.normalMappings": {
-        "q": "do:exit"
-    },
-    "list.insertMappings": {
-        "<C-c>": "do:exit", 
-        "<C-t>": "action:tabe"
-    },
-    "yaml.format.enable": true,
-    "yaml.format.singleQuote": true,
-    "[yaml]": {
-        "editor.insertSpaces": "auto",
-        "editor.tabSize": 2
-    }
+  "javascript.suggestionActions.enabled": false,
+  "coc.preferences.currentFunctionSymbolAutoUpdate": true,
+  "diagnostic.virtualText": true,
+  "diagnostic.messageTarget": "echo",
+  "diagnostic.errorSign": "☓",
+  "diagnostic.warningSign": "⚠",
+  "diagnostic.infoSign": "☒",
+  "diagnostic.hintSign": "⚐"
 }
 

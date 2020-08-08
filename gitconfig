@@ -1,6 +1,9 @@
 [core]
 	filemode = true
-	editor = vim
+	editor = nvim
+    pager = delta --color-only
+[interactive]
+    diffFilter = delta --color-only
 [alias]
 	st = status
 	ci = commit
@@ -10,10 +13,11 @@
 	pick = cherry-pick
 	fp = format-patch
 	la = log --graph --decorate --pretty=oneline --abbrev-commit --all
-	ll = log --graph --decorate --pretty=oneline --abbrev-commit
-	lf = log --stat --decorate --format=fuller abbrev-commit
+	ll = log  --decorate --pretty=oneline --abbrev-commit
+	lam = log --graph --decorate --pretty=oneline --abbrev-commit --all --merges
+	llm = log  --decorate --pretty=oneline --abbrev-commit --merges
 [color]
-	ui = auto
+	ui = true
 	diff = auto
 	status = auto
 	branch = auto
