@@ -10,8 +10,8 @@ done
 
 curl -sL install-node.now.sh/lts | bash
 
-brew tap homebrew/cask-fonts
-brew cask install font-inconsolata-nerd-font
+#brew tap homebrew/cask-fonts
+#brew cask install font-inconsolata-nerd-font
 
 brew install autojump
 brew install jq
