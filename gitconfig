@@ -1,13 +1,14 @@
 [core]
 	filemode = true
 	editor = nvim
-    pager = delta --color-only
+	pager = diff-so-fancy | emojify | less --tabs=2 -RFX
 [interactive]
     diffFilter = delta --color-only
 [alias]
 	st = status
 	ci = commit
 	co = checkout
+	cp = cherry-pick
 	br = branch
 	df = diff
 	pick = cherry-pick
@@ -24,3 +25,33 @@
 	log = auto
 [push]
 	default = simple
+[mergetool "nvim"]
+  cmd = nvim -f -c \"Gdiffsplit!\" \"$MERGED\"
+# set "nvim" as tool for merging
+[merge]
+  tool = nvim
+# automatically launch merge tool without displaying a prompt
+[mergetool]
+  prompt = false
+[difftool]
+    prompt = false
+[diff]
+    tool = nvimdiff
+[difftool "nvimdiff"]
+    cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
+[pull]
+	rebase = true
+[diff-so-fancy]
+	stripLeadingSymbols = false
+[color "diff-highlight"]
+	oldNormal = red bold
+	oldHighlight = red bold 52
+	newNormal = green bold
+	newHighlight = green bold 22
+[color "diff"]
+	meta = 227
+	frag = magenta bold
+	commit = 227 bold
+	old = red bold
+	new = green bold
+	whitespace = red reverse

@@ -12,6 +12,8 @@ alias g='git'
 alias t='tmux -2 -u'
 alias f='nvim +Files'
 alias d='docker'
+alias dc='docker-compose'
+alias gist='gh gist'
 
 alias vdf='vimdiff'
 alias vrc='nvim ~/.config/nvim/init.vim'
