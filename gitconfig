@@ -1,9 +1,10 @@
+[user]
+    name = Ryder
+    email = ddzero2c@gmail.com
 [core]
 	filemode = true
 	editor = nvim
 	pager = diff-so-fancy | emojify | less --tabs=2 -RFX
-[interactive]
-    diffFilter = delta --color-only
 [alias]
 	st = status
 	ci = commit
@@ -26,7 +27,7 @@
 [push]
 	default = simple
 [mergetool "nvim"]
-  cmd = nvim -f -c \"Gdiffsplit!\" \"$MERGED\"
+  cmd = nvim -f -c \"Gvdiffsplit!\" \"$MERGED\"
 # set "nvim" as tool for merging
 [merge]
   tool = nvim
@@ -34,11 +35,11 @@
 [mergetool]
   prompt = false
 [difftool]
-    prompt = false
+	prompt = false
 [diff]
-    tool = nvimdiff
+	tool = nvimdiff
 [difftool "nvimdiff"]
-    cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
+	cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
 [pull]
 	rebase = true
 [diff-so-fancy]

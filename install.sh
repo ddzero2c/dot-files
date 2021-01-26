@@ -5,7 +5,7 @@ set -e -x
 dotfiles="bashrc bash_profile gitconfig tmux.conf"
 for f in $dotfiles; do
     [ -e ~/.$f ] && mv ~/.$f ~/.${f}.bak
-    cp $PWD/$f ~/.$f
+    ln -s $PWD/$f ~/.$f
 done
 
 curl -sL install-node.now.sh/lts | bash
@@ -14,8 +14,6 @@ curl -sL install-node.now.sh/lts | bash
 #brew cask install font-inconsolata-nerd-font
 
 brew install autojump
-brew install jq
-brew install git-delta
 brew install neovim
 
 nvimfiles="coc-settings.json init.vim"
