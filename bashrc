@@ -2,7 +2,7 @@
 alias cp='cp -i'
 alias mv='mv -i'
 alias rm='rm -i'
-alias ls='ls -G'
+alias ls='ls --color'
 alias ll='ls -ahlF'
 alias vimdiff='nvim -d'
 alias vim='nvim'
@@ -13,6 +13,7 @@ alias t='tmux -2 -u'
 alias f='nvim +Files'
 alias d='docker'
 alias dc='docker-compose'
+alias dmer='docker-compose up -d mongo-setup es redis'
 alias gist='gh gist'
 
 alias vdf='vimdiff'
@@ -40,7 +41,7 @@ __git_complete g __git_main
 eval "$(jump shell)"
 
 #fzf
-export FZF_DEFAULT_COMMAND='rg --files'
+export FZF_DEFAULT_COMMAND='fd --type f -H -E .git'
 export FZF_DEFAULT_OPTS='-m --bind ctrl-a:select-all,ctrl-d:deselect-all'
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
@@ -50,12 +51,22 @@ PS1=$'\[\033[1;32m\]\u2192 \W $(git_branch)\[\033[00m\]'
 bind '"\C-p": history-search-backward'
 bind '"\C-n": history-search-forward'
 
+source <(flux completion bash)
+source <(kubectl completion bash)
+source <(gh completion --shell bash)
+alias k=kubectl
+complete -F __start_kubectl k
+
 [ -d ~/.bashrc.d ] && for f in ~/.bashrc.d/*; do
     source $f
 done
 
 # some more binaries and scripts
 PATH="$PATH:~/bin"
+PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"
+PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
+
 LANG="en_US.UTF-8"
 LC_COLLATE="en_US.UTF-8"
 LC_CTYPE="en_US.UTF-8"

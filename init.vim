@@ -16,6 +16,9 @@ Plug 'junegunn/fzf.vim'
 Plug 'liuchengxu/vim-which-key'
 Plug 'diepm/vim-rest-console'
 let g:vrc_trigger = '<c-y>'
+Plug 'ntpeters/vim-better-whitespace'
+
+Plug 'AndrewRadev/tagalong.vim', {'branch': 'main'}
 
 " markdown
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
@@ -77,43 +80,36 @@ set ic
 set ts=2
 set sts=2
 set sw=2
+set mouse=a
 set expandtab
 set undofile
 set showtabline=2
 set signcolumn=yes
-"set termguicolors
+set termguicolors
 set icm=nosplit " live preview
 
 " colors
-colorscheme dim
-hi TabLineFill cterm=none ctermfg=black ctermbg = none
-hi TabLine     cterm=none ctermfg=grey ctermbg = none
-hi TabLineSel  cterm=none ctermfg=white ctermbg = darkgrey
-"hi! link CocHighlightText Highlight
-"hi Visual      ctermfg=white ctermbg=darkgrey
-hi! link ScrollView Pmenu
+"colorscheme dim
+"hi TabLineFill cterm=none ctermfg=black ctermbg = none
+"hi TabLine     cterm=none ctermfg=grey ctermbg = none
+"hi TabLineSel  cterm=none ctermfg=white ctermbg = darkgrey
+"hi! link ScrollView Pmenu
+"hi SignColumn ctermbg=none
 
-hi SignColumn ctermbg=none
-"hi StatusLine ctermbg=none
-"hi StatusLineNC ctermbg=none
-"hi CursorColumn ctermfg=black ctermbg=yellow
-"hi FoldColumn ctermbg=none
-"hi Folded ctermbg=none
-
-"colorscheme lumiere
-"hi Special gui=bold guifg=#000000
-"hi Identifier gui=bold guifg=#000000
-"hi Normal guifg=#000000
-"hi String guifg=#2b2b2b guibg=#dedcd6
-"hi Comment gui=italic guifg=#424242 guibg=#F1F1F1
-"hi! link Number MoreMsg
-"hi! link Operator MoreMsg
-"" fix coc.nvim
-"hi! link CocErrorSign ErrorMsg
-"hi! link CocWarningSign WarningMsg
-"hi! link CocInfoSign InfoMsg
-"hi! link CocHintSign HintMsg
-"hi! link CocHighlightText StatusLine
+colorscheme lumiere
+hi Special gui=bold guifg=#000000
+hi Identifier gui=bold guifg=#000000
+hi Normal guifg=#000000
+hi String guifg=#2b2b2b guibg=#dedcd6
+hi Comment gui=italic guifg=#424242 guibg=#F1F1F1
+hi! link Number MoreMsg
+hi! link Operator MoreMsg
+" fix coc.nvim
+hi! link CocErrorSign ErrorMsg
+hi! link CocWarningSign WarningMsg
+hi! link CocInfoSign InfoMsg
+hi! link CocHintSign HintMsg
+hi! link CocHighlightText StatusLine
 
 " system clipboard
 set clipboard+=unnamed
@@ -138,9 +134,10 @@ augroup END
 set statusline=
 set statusline+=%{coc#status()}
 set statusline+=\ %<%F\                                "File+path
-set statusline+=%=\ %{''.(&fenc!=''?&fenc:&enc).''}\ "Encoding
-set statusline+=%{(&bomb?\",BOM\":\"\")}\            "Encoding2
-set statusline+=%{&ff}\                              "FileFormat (dos/unix..)
+set statusline+=%=(%{FugitiveHead()})
+set statusline+=\ %{&fileencoding?&fileencoding:&encoding}
+set statusline+=/%{&fileformat}
+set statusline+=\ %l:%c
 
 " markdown preview
 nmap <leader>md <Plug>MarkdownPreviewToggle
@@ -148,19 +145,18 @@ let g:mkdp_markdown_css = 'github-markdown.css'
 
 " fzf
 nnoremap <leader>p :<C-u>Files <CR>
-nnoremap <leader>fb  :<C-u>:Buffer<CR>
-nnoremap <leader>fm  :<C-u>:Marks<CR>
 let g:fzf_preview_window = ''
 let $FZF_DEFAULT_OPTS = '--layout=reverse --no-preview'
 let g:fzf_layout = { 'window': { 'width': 0.5, 'height': 0.5, 'highlight': 'Comment' } }
 
 " coc.nvim
 let g:coc_global_extensions = [
-            \'coc-highlight', 'coc-stylelint', 'coc-html', 'coc-css',
+            \'coc-highlight', 'coc-stylelint', 'coc-html', 'coc-css', 'coc-explorer',
             \'coc-word', 'coc-emoji', 'coc-snippets',
             \'coc-json', 'coc-yaml',
-            \'coc-prettier', 'coc-eslint', 'coc-tsserver'
-            \]
+            \'coc-prettier', 'coc-eslint', 'coc-tsserver', 'coc-styled-components', 'coc-react-refactor',
+            \'coc-solargraph']
+nmap <space>t :CocCommand explorer<CR>
 
 set hidden
 set nobackup
@@ -181,10 +177,11 @@ nmap <silent> gr <Plug>(coc-references)
 nmap <leader>rn <Plug>(coc-rename)
 autocmd CursorHold * silent call CocActionAsync('highlight')
 
-" formatting selected code.
+" Formatting selected code.
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
 command! -nargs=0 Prettier :CocCommand prettier.formatFile
-xmap = <Plug>(coc-format-selected)
-nmap = <Plug>(coc-format-selected)
+
 augroup mygroup
   autocmd!
   " Setup formatexpr specified filetype(s).
@@ -199,8 +196,10 @@ nnoremap <silent> K :call <SID>show_documentation()<CR>
 function! s:show_documentation()
   if (index(['vim','help'], &filetype) >= 0)
     execute 'h '.expand('<cword>')
+  elseif (coc#rpc#ready())
+    call CocActionAsync('doHover')
   else
-    call CocAction('doHover')
+    execute '!' . &keywordprg . " " . expand('<cword>')
   endif
 endfunction
 
@@ -210,8 +209,8 @@ nmap <silent> ]g <Plug>(coc-diagnostic-next)
 nnoremap <silent><nowait> <leader>dg  :<C-u>CocList diagnostics<cr>
 
 xmap <leader>a  <Plug>(coc-codeaction-selected)
-nmap <leader>a  <Plug>(coc-codeaction-selected)
-nmap <leader>ac  <Plug>(coc-codeaction)
+vmap <leader>a  <Plug>(coc-codeaction-selected)
+nmap <leader>a  <Plug>(coc-codeaction)
 nmap <leader>qf  <Plug>(coc-fix-current)
 inoremap <silent><expr> <c-space> coc#refresh()
 
@@ -254,12 +253,11 @@ nmap ]g <Plug>(coc-git-nextchunk)
 nmap [c <Plug>(coc-git-prevconflict)
 nmap ]c <Plug>(coc-git-nextconflict)
 
-inoremap <silent><expr> <c-n>
-  \ pumvisible() ? coc#_select_confirm() :
-  \ coc#expandableOrJumpable() ?
-  \ "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-  \ <SID>check_back_space() ? "\<c-n>" :
-  \ coc#refresh()
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 
 function! s:check_back_space() abort
   let col = col('.') - 1
