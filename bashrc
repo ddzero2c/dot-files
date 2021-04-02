@@ -47,7 +47,10 @@ source <(flux completion bash)
 source <(kubectl completion bash)
 source <(gh completion --shell bash)
 alias k=kubectl
+alias kns=kubens
+alias kctx=kubectx
 complete -F __start_kubectl k
+[ -f ~/.kubectl_aliases ] && source ~/.kubectl_aliases
 
 [ -d ~/.bashrc.d ] && for f in ~/.bashrc.d/*; do
     source $f
