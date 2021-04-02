@@ -7,22 +7,14 @@ alias ll='ls -ahlF'
 alias vimdiff='nvim -d'
 alias vim='nvim'
 alias v='nvim -p'
-alias vg='nvim +GhostStart'
 alias g='git'
 alias t='tmux -2 -u'
-alias f='nvim +Files'
+alias f='nvim -p $(fzf)'
 alias d='docker'
 alias dc='docker-compose'
-alias dmer='docker-compose up -d mongo-setup es redis'
 alias gist='gh gist'
 
 alias vdf='vimdiff'
-alias vrc='nvim ~/.config/nvim/init.vim'
-alias vcoc='nvim ~/.config/nvim/coc-settings.json'
-alias vbrc='nvim ~/.bashrc'
-alias vpoprc='nvim ~/.bashrc.d/popdaily'
-
-alias sbrc='source ~/.bash_profile'
 alias myip='ifconfig | grep "10\.\|192\.168" | cut -f2'
 
 # git branch
