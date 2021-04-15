@@ -13,6 +13,7 @@ export FZF_DEFAULT_OPTS='-m --bind ctrl-a:select-all,ctrl-d:deselect-all'
 bind '"\C-p": history-search-backward'
 bind '"\C-n": history-search-forward'
 
+[ -f ~/.bash_aliases ] && source ~/.bash_aliases
 [ -f ~/.kubectl_aliases ] && source ~/.kubectl_aliases
 
 [ -d ~/.bashrc.d ] && for f in ~/.bashrc.d/*; do
