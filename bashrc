@@ -1,5 +1,5 @@
 # some more binaries and scripts
-PATH="$PATH:~/bin:/opt/homebrew/bin"
+PATH="$PATH:~/bin:~/go/bin:/opt/homebrew/bin"
 
 # bash complete
 [ -f /etc/bash_completion ] && . /etc/bash_completion

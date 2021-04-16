@@ -18,6 +18,9 @@ brew install kubectl
 brew install font-meslo-lg-nerd-font
 brew install diff-so-fancy
 brew install emojify
+brew install fd
+brew install ag
+brew install rg
 
 # install tpm
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm

@@ -18,7 +18,7 @@ alias kns=kubens
 alias kctx=kubectx
 complete -F __start_kubectl k
 
-
+alias vim='nvim'
 alias vdf='vimdiff'
 alias vimdiff='nvim -d'
 alias v='nvim -p'
@@ -28,3 +28,7 @@ alias f='nvim -p $(fzf)'
 alias myip='ifconfig | grep "10\.\|192\.168" | cut -f2'
 
 #source <(flux completion bash)
+
+alias cdpopser='cd ~/popdaily/popdaily.server'
+
+alias cdafws='cd ~/assetflow/assetflow-ws'
