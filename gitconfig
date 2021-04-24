@@ -14,10 +14,8 @@
 	df = diff
 	pick = cherry-pick
 	fp = format-patch
-	la = log --graph --decorate --pretty=oneline --abbrev-commit --all
-	ll = log  --decorate --pretty=oneline --abbrev-commit
-	lam = log --graph --decorate --pretty=oneline --abbrev-commit --all --merges
-	llm = log  --decorate --pretty=oneline --abbrev-commit --merges
+	ll = log --graph --decorate --pretty=oneline --abbrev-commit --all
+	llm = log --graph --decorate --pretty=oneline --abbrev-commit --all --merges
 [color]
 	ui = true
 	diff = auto

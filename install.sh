@@ -2,7 +2,7 @@
 
 set -e -x
 
-dotfiles="bashrc bash_profile bash_aliases gitconfig tmux.conf kubectl_aliases"
+dotfiles="zshrc zsh_aliases bashrc bash_profile bash_aliases gitconfig tmux.conf kubectl_aliases"
 for f in $dotfiles; do
     [ -e ~/.$f ] && mv ~/.$f ~/.${f}.bak
     ln -s $PWD/$f ~/.$f
@@ -12,6 +12,7 @@ done
 brew install bash
 brew install bash-completion
 brew install git
+brew install tig
 brew install gh
 brew install tmux
 brew install kubectl
