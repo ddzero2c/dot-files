@@ -9,8 +9,8 @@ for f in $dotfiles; do
 done
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install bash
-brew install bash-completion
+brew install zsh-completions
+brew install zsh-autosuggestions
 brew install git
 brew install tig
 brew install gh
