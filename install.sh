@@ -4,7 +4,7 @@ set -e -x
 
 dotfiles="zshrc zsh_aliases bashrc bash_profile bash_aliases gitconfig tmux.conf kubectl_aliases"
 for f in $dotfiles; do
-    [ -e ~/.$f ] && mv ~/.$f ~/.${f}.bak
+    [ -e ~/.$f ] && mv ~/.$f ~/.${f}.$(date +%Y%m%d-%H%M%S)-bak
     ln -s $PWD/$f ~/.$f
 done
 
