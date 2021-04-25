@@ -5,6 +5,9 @@ if type brew &>/dev/null; then
   compinit
 fi
 
+# auto-suggestions
+source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
 # bash-like
 setopt noautomenu
 bindkey -e
@@ -30,7 +33,7 @@ LC_MONETARY="en_US.UTF-8"
 LC_NUMERIC="en_US.UTF-8"
 LC_TIME="en_US.UTF-8"
 LC_ALL="en_US.UTF-8"
-PATH="$PATH:~/bin:~/go/bin"
+export PATH="$HOME/bin:$HOME/go/bin:$PATH"
 
 export EDITOR="nvim"
 
