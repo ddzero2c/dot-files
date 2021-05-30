@@ -2,15 +2,20 @@
 
 set -e -x
 
-dotfiles="zshrc zsh_aliases bashrc bash_profile bash_aliases gitconfig tmux.conf kubectl_aliases"
+dotfiles="bashrc bash_profile bash_aliases gitconfig tmux.conf kubectl_aliases"
 for f in $dotfiles; do
     [ -e ~/.$f ] && mv ~/.$f ~/.${f}.$(date +%Y%m%d-%H%M%S)-bak
     ln -s $PWD/$f ~/.$f
 done
 
+configfiles="starship.toml"
+for f in $configfiles; do
+    [ -e ~/.$f ] && mv ~/.config/$f ~/.config/${f}.$(date +%Y%m%d-%H%M%S)-bak
+    ln -s $PWD/$f ~/.config/$f
+done
+
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install zsh-completions
-brew install zsh-autosuggestions
+brew install bash-completions
 brew install git
 brew install tig
 brew install gh

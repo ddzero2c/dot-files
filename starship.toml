@@ -1,0 +1,29 @@
+format = """
+$directory\
+$git_branch\
+$git_commit\
+$git_state\
+$git_status
+$golang\
+$helm\
+$java\
+$julia\
+$nodejs\
+$perl\
+$php\
+$python\
+$ruby\
+$rust\
+$swift\
+$terraform\
+$nix_shell\
+$lua\
+$jobs\
+$battery\
+$time\
+$status\
+$shell\
+$character"""
+
+[line_break]
+disabled = true

@@ -1,5 +1,7 @@
 # some more binaries and scripts
-PATH="$PATH:~/bin:~/go/bin:/opt/homebrew/bin"
+if [[ -z $TMUX ]]; then
+    PATH="$HOME/bin:$HOME/go/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
+fi
 
 # bash complete
 [ -f /etc/bash_completion ] && . /etc/bash_completion
@@ -33,3 +35,8 @@ LC_ALL="en_US.UTF-8"
 export EDITOR="nvim"
 
 eval "$(starship init bash)"
+. "$HOME/.cargo/env"
+
+export PATH="/opt/homebrew/opt/icu4c/bin:$PATH"
+export PATH="/opt/homebrew/opt/icu4c/sbin:$PATH"
+export PATH="/opt/homebrew/opt/ansible@2.9/bin:$PATH"
