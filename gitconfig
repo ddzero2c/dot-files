@@ -1,14 +1,17 @@
 [user]
-    name = Ryder
-    email = ddzero2c@gmail.com
+	name = Ryder
+	email = ddzero2c@gmail.com
 [core]
 	filemode = true
 	editor = nvim
-	pager = diff-so-fancy | emojify | less --tabs=2 -RFX
+	pager = diffr | less -R
+[interactive]
+	diffFilter = diffr
 [alias]
 	st = status
 	ci = commit
 	co = checkout
+	rb = rebase
 	cp = cherry-pick
 	br = branch
 	df = diff
@@ -16,30 +19,25 @@
 	fp = format-patch
 	ll = log --graph --decorate --pretty=oneline --abbrev-commit --all
 	llm = log --graph --decorate --pretty=oneline --abbrev-commit --all --merges
-[color]
-	ui = true
-	diff = auto
-	status = auto
-	branch = auto
-	log = auto
 [push]
 	default = simple
-[mergetool "nvim"]
-  cmd = nvim -f -c \"Gvdiffsplit!\" \"$MERGED\"
-# set "nvim" as tool for merging
-[merge]
-  tool = nvim
-# automatically launch merge tool without displaying a prompt
-[mergetool]
-  prompt = false
-	keepBackup = false
-[difftool]
-	prompt = false
-[diff]
-	tool = nvimdiff
-[difftool "nvimdiff"]
-	cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
 [pull]
 	rebase = true
-[diff-so-fancy]
-	stripLeadingSymbols = false
+[merge]
+	tool = vimdiff
+[mergetool]
+	prompt = false
+	keepBackup = false
+[mergetool "vimdiff"]
+	cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
+[diff]
+	tool = vimdiff
+[difftool]
+	prompt = false
+[difftool "vimdiff"]
+	cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
