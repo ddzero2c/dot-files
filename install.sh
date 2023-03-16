@@ -8,7 +8,7 @@ for f in $dotfiles; do
     ln -s $PWD/$f ~/.$f
 done
 
-configfiles="starship.toml"
+configfiles="starship.toml kitty"
 for f in $configfiles; do
     [ -e ~/.$f ] && mv ~/.config/$f ~/.config/${f}.$(date +%Y%m%d-%H%M%S)-bak
     ln -s $PWD/$f ~/.config/$f
@@ -21,8 +21,6 @@ brew install tig
 brew install gh
 brew install tmux
 brew install kubectl
-brew install font-meslo-lg-nerd-font
-brew install diff-so-fancy
 brew install emojify
 brew install fd
 brew install ag

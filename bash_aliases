@@ -7,7 +7,7 @@ alias ll='ls -ahlF'
 alias vbashrc="nvim ~/.bashrc"
 
 alias w="watch "
-alias d='docker'
+alias d='docker '
 alias dex='docker exec'
 alias dps='docker ps'
 alias dpsa='docker ps -a'

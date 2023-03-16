@@ -5,6 +5,7 @@
 	filemode = true
 	editor = nvim
 	pager = diffr | less -R
+    attributesfile = ~/.gitattributes
 [interactive]
 	diffFilter = diffr
 [alias]
@@ -17,27 +18,30 @@
 	df = diff
 	pick = cherry-pick
 	fp = format-patch
-	ll = log --graph --decorate --pretty=oneline --abbrev-commit --all
-	llm = log --graph --decorate --pretty=oneline --abbrev-commit --all --merges
+    ll = log --graph --decorate --pretty=oneline --abbrev-commit --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%ai%C(reset) %C(bold green)(%ar)%C(reset)%C(auto)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --date=rfc
+	llm = log --graph --decorate --pretty=oneline --abbrev-commit --all --merges --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%ai%C(reset) %C(bold green)(%ar)%C(reset)%C(auto)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)'
+    cleanup = "!git branch --merged | grep  -v '\\*\\|master\\|develop\\|main' | xargs -n 1 git branch -d"
 [push]
 	default = simple
 [pull]
 	rebase = true
 [merge]
 	tool = vimdiff
+[merge "json"]
+    name = custom merge driver for json files
+    driver = git-json-merge %A %O %B
 [mergetool]
 	prompt = false
 	keepBackup = false
 [mergetool "vimdiff"]
-	cmd = nvim -d $LOCAL $REMOTE $MERGED -c '$wincmd w' -c 'wincmd J'
+	cmd = nvim -d $LOCAL $MERGED $REMOTE
 [diff]
 	tool = vimdiff
 [difftool]
 	prompt = false
 [difftool "vimdiff"]
-	cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
-[filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
+	cmd = nvim -d \"$LOCAL\" \"$REMOTE\"
+[log]
+	date = iso
+[url "git@github.com:"]
+	insteadOf = https://github.com
