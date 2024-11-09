@@ -1,0 +1,52 @@
+PS0='$(perl -MTime::HiRes=time -e '"'"'printf "%.3f\n", time'"'"' > /tmp/cmd_start_$$)'
+
+format_duration() {
+	local ms=$1
+	if [ $ms -lt 1000 ]; then
+		printf "%dms" $ms
+		return
+	fi
+
+	local total_seconds=$(($ms / 1000))
+	local millis=$(($ms % 1000))
+	local hours=$(($total_seconds / 3600))
+	local minutes=$((($total_seconds % 3600) / 60))
+	local seconds=$(($total_seconds % 60))
+
+	if [ $hours -gt 0 ]; then
+		printf "%dh%dm%d.%03ds" $hours $minutes $seconds $millis
+	elif [ $minutes -gt 0 ]; then
+		printf "%dm%d.%03ds" $minutes $seconds $millis
+	else
+		if [ $millis -eq 0 ]; then
+			printf "%ds" $seconds
+		else
+			printf "%d.%03ds" $seconds $millis
+		fi
+	fi
+}
+
+get_formatted_path() {
+	echo "$PWD" | sed "s|^$HOME|~|"
+}
+
+precmd() {
+	local EXIT="$?"
+	local duration="0ms"
+	if [ -f /tmp/cmd_start_$$ ]; then
+		local start=$(<"/tmp/cmd_start_$$")
+		local current=$(perl -MTime::HiRes=time -e 'printf "%.3f\n", time')
+		local ms=$(printf "%.0f" $(echo "($current - $start) * 1000" | bc))
+		duration=$(format_duration $ms)
+		rm -f /tmp/cmd_start_$$
+	fi
+	local PROMPT_COLOR=\\[\\e[32m\\]
+	[[ "$EXIT" != "0" ]] && PROMPT_COLOR=\\[\\e[31m\\]
+	PS1="\e[1m\[\e[34m\]$(get_formatted_path)\[\e[32m\]$(parse_git_branch)\[\e[0m\] ⏱ ${duration}\n${PROMPT_COLOR}❯\[\e[0m\] "
+}
+
+PROMPT_COMMAND=precmd
+
+parse_git_branch() {
+	git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}

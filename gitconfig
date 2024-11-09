@@ -6,6 +6,7 @@
 	editor = nvim
 	pager = diffr | less -R
     attributesfile = ~/.gitattributes
+	autocrlf = input
 [interactive]
 	diffFilter = diffr
 [alias]

@@ -4,18 +4,14 @@ alias rm='rm -i'
 alias ls='ls -G'
 alias ll='ls -ahlF'
 
-alias vbashrc="nvim ~/.bashrc"
+alias rc="nvim ~/.bashrc"
 
+alias b="bun"
+alias p="pnpm"
+alias y="yarn"
 alias w="watch "
-alias d='docker '
-alias dex='docker exec'
-alias dps='docker ps'
-alias dpsa='docker ps -a'
+alias d='docker'
 alias dc='docker-compose'
-alias dcu='docker-compose up'
-alias dcud='docker-compose up -d'
-alias dcd='docker-compose down'
-alias dcb='docker-compose build'
 
 alias g='git'
 __git_complete g __git_main
@@ -29,12 +25,11 @@ alias kctx=kubectx
 complete -F __start_kubectl k
 
 alias vim='nvim'
-alias vdf='vimdiff'
-alias vimdiff='nvim -d'
+alias vdf='nvim -d'
 alias v='nvim -p'
 alias t='tmux -2 -u'
-alias f='nvim -p $(fzf)'
+alias f='nvim +Telescope\ find_files'
 
 alias myip='ifconfig | grep "10\.\|192\.168" | cut -f2'
 
-alias sbashrc='source ~/.bashrc'
+alias so='source ~/.bashrc'
