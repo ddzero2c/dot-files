@@ -8,19 +8,18 @@ for f in $dotfiles; do
     ln -s $PWD/$f ~/.$f
 done
 
-configfiles="nvim/"
+mkdir -p ~/bin ~/.bashrc.d ~/.config
+configfiles="nvim"
 for f in $configfiles; do
     [ -e ~/.$f ] && mv ~/.config/$f ~/.config/${f}.$(date +%Y%m%d-%H%M%S)-bak
     ln -s $PWD/$f ~/.config/$f
 done
 
-mkdir -p ~/bin ~/.bashrc.d
 cp tmux-sessionizer ~/bin/
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install bash-completions
+#/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install bash-completion
 brew install tig
-brew install git
 brew install asdf
 brew install gh
 brew install tmux
