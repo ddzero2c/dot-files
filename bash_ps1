@@ -42,7 +42,9 @@ precmd() {
 	fi
 	local PROMPT_COLOR=\\[\\e[32m\\]
 	[[ "$EXIT" != "0" ]] && PROMPT_COLOR=\\[\\e[31m\\]
-	PS1="\e[1m\[\e[34m\]$(get_formatted_path)\[\e[32m\]$(parse_git_branch)\[\e[0m\] ⏱ ${duration}\n${PROMPT_COLOR}❯\[\e[0m\] "
+    local VENV=""
+    [[ -n "$VIRTUAL_ENV" ]] && VENV="\[\e[90m\]($(basename $VIRTUAL_ENV))\[\e[0m\] "
+	PS1="\e[1m\[\e[34m\]$(get_formatted_path)\[\e[32m\]$(parse_git_branch)\[\e[0m\] ${VENV}⏱ ${duration}\n${PROMPT_COLOR}❯\[\e[0m\] "
 }
 
 PROMPT_COMMAND=precmd
