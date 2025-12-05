@@ -4,6 +4,8 @@ vim.pack.add({
   { src = "https://github.com/nvimtools/none-ls.nvim" },
   { src = "https://github.com/nvimtools/none-ls-extras.nvim" },
   { src = "https://github.com/mfussenegger/nvim-dap" },
+  { src = "https://github.com/nvim-neotest/nvim-nio" },
+  { src = "https://github.com/rcarriga/nvim-dap-ui" },
   { src = "https://github.com/Saghen/blink.cmp",                           version = "v1.7.0" },
   { src = "https://github.com/supermaven-inc/supermaven-nvim" },
   { src = "https://github.com/coder/claudecode.nvim" },
@@ -20,6 +22,7 @@ vim.pack.add({
   { src = "https://github.com/lewis6991/gitsigns.nvim" },
   { src = "https://github.com/stevearc/oil.nvim" },
   { src = "https://github.com/uga-rosa/ccc.nvim" },
+  { src = "https://github.com/olexsmir/gopher.nvim" },
 })
 require("mason").setup()
 local null_ls = require('null-ls')
@@ -115,12 +118,14 @@ require('oil').setup({
   }
 })
 require('ccc').setup({ highlighter = { auto_enable = true, lsp = true } })
+require('gopher').setup({})
 
 -- settings
 vim.g.mapleader = " "
 vim.o.number = true
 vim.o.relativenumber = true
 vim.o.signcolumn = "yes:1"
+vim.o.wrap = false
 vim.o.mouse = "n"
 vim.o.undofile = true
 vim.o.clipboard = "unnamed,unnamedplus"
@@ -133,6 +138,7 @@ vim.o.expandtab = false
 vim.o.winborder = 'single'
 vim.o.termguicolors = true
 vim.o.statusline = "%<%f %h%m%r %= %{v:lua.lsp_status_all()} %=%-14.(%l,%c%V%) %P"
+vim.g.omni_sql_no_default_maps = 1
 _G.lsp_status_all = function()
   local c = vim.lsp.get_clients({ bufnr = 0 })
   return #c > 0 and table.concat(vim.tbl_map(function(x) return x.name end, c), ", ") or ""
@@ -150,6 +156,9 @@ vim.lsp.enable({ "lua_ls", "gopls", "dartls" })
 
 
 -- keymaps
+vim.keymap.set('i', '<C-c>', '<Esc>')
+vim.keymap.set("n", "<Tab>", "<cmd>cnext<CR>zz")
+vim.keymap.set("n", "<S-Tab>", "<cmd>cprev<CR>zz")
 vim.keymap.set("n", "<leader>p", '<cmd>Files<cr>', { desc = 'Fuzzy finder' })
 vim.keymap.set('n', '<leader>a', '<cmd>ClaudeCodeStatus<cr>', { desc = 'Claude Code' })
 vim.keymap.set('n', '<leader>b', '<cmd>DapToggleBreakpoint<cr>', { desc = "Breakpoint" })
@@ -159,6 +168,22 @@ vim.keymap.set('v', 'ga', '<cmd>ClaudeCodeSend<cr>', { desc = 'Send to Claude' }
 vim.keymap.set('n', 'ga', '<cmd>ClaudeCodeAdd %<cr>', { desc = 'Add current buffer' })
 vim.keymap.set('n', 'gy', '<cmd>ClaudeCodeDiffAccept<cr>', { desc = 'Accept diff' })
 vim.keymap.set('n', 'gn', '<cmd>ClaudeCodeDiffDeny<cr>', { desc = 'Deny diff' })
+
+
+-- commands
+vim.api.nvim_create_user_command('RG', function(opts)
+  local search_term = opts.args
+  local results = vim.fn.system('rg --vimgrep ' .. vim.fn.shellescape(search_term))
+  vim.fn.setqflist({}, ' ', {
+    title = 'Search Results',
+    lines = vim.split(results, '\n', { trimempty = true })
+  })
+  vim.cmd('copen')
+end, {
+  nargs = '+',
+  desc = 'Search using ripgrep and populate quickfix list'
+})
+vim.cmd.ca('rg', 'RG')
 
 
 -- autocmds

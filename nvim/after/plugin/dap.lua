@@ -1,9 +1,23 @@
-local dap = require('dap')
-local widgets = require('dap.ui.widgets')
+local dap, dapui = require("dap"), require("dapui")
 vim.fn.sign_define("DapBreakpoint", { text = "•", texthl = "ErrorMsg", linehl = "", numhl = "" })
 vim.fn.sign_define("DapStopped", { text = "→", texthl = "ErrorMsg", linehl = "", numhl = "Error" })
+dapui.setup({
+  icons = { expanded = "▼", collapsed = "⏵", circular = "" },
+  layouts = {
+    {
+      elements = {
+        "stacks",
+        "scopes",
+        "repl",
+      },
+      size = 12,
+      position = "bottom",
+    },
+  },
+})
 dap.listeners.after.event_initialized['dapui_config'] = function()
-  vim.keymap.set('n', 'p', widgets.hover, { silent = true })
+  dapui.open()
+  vim.keymap.set('n', 'p', dapui.eval, { silent = true })
   vim.keymap.set('n', 'n', dap.step_over, { silent = true })
   vim.keymap.set('n', 'i', dap.step_into, { silent = true })
   vim.keymap.set('n', 'o', dap.step_out, { silent = true })
@@ -17,4 +31,5 @@ dap.listeners.before.event_terminated['dapui_config'] = function()
   vim.keymap.del('n', 'o', {})
   vim.keymap.del('n', 'b', {})
   vim.keymap.del('n', 'c', {})
+  dapui.close()
 end

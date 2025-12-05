@@ -25,6 +25,10 @@
       "rev": "20ad441",
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
+    "gopher.nvim": {
+      "rev": "295e21e",
+      "src": "https://github.com/olexsmir/gopher.nvim"
+    },
     "indentmini.nvim": {
       "rev": "e0f1e38",
       "src": "https://github.com/nvimdev/indentmini.nvim"
@@ -49,9 +53,17 @@
       "rev": "6782b09",
       "src": "https://github.com/mfussenegger/nvim-dap"
     },
+    "nvim-dap-ui": {
+      "rev": "cf91d5e",
+      "src": "https://github.com/rcarriga/nvim-dap-ui"
+    },
     "nvim-lspconfig": {
       "rev": "48a9b4d",
       "src": "https://github.com/neovim/nvim-lspconfig.git"
+    },
+    "nvim-nio": {
+      "rev": "21f5324",
+      "src": "https://github.com/nvim-neotest/nvim-nio"
     },
     "nvim-surround": {
       "rev": "fcfa7e0",

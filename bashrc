@@ -1,3 +1,4 @@
+HOMEBREW_NO_AUTO_UPDATE=1
 eval "$(/opt/homebrew/bin/brew shellenv)"
 # bash complete
 if [[ -s $HOMEBREW_PREFIX/etc/profile.d/bash_completion.sh ]]; then
@@ -9,9 +10,9 @@ bind '"\C-n": history-search-forward'
 
 [ -f ~/.bash_aliases ] && source ~/.bash_aliases
 [ -f ~/.bash_ps1 ] && source ~/.bash_ps1
-#[ -d ~/.bashrc.d ] && for f in ~/.bashrc.d/*; do
-#    source $f
-#done
+[ -d ~/.bashrc.d ] && for f in ~/.bashrc.d/*; do
+   source $f
+done
 
 
 export LANG="en_US.UTF-8"
@@ -25,3 +26,5 @@ export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$PATH":"$HOME/.pub-cache/bin"
 export FLUTTER_ROOT="$(asdf where flutter)"
+
+

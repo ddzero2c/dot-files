@@ -63,10 +63,10 @@ dap.configurations.go = {
   },
   {
     type = "delve",
-    name = "Debug test", -- configuration for debugging test files
+    name = "Debug test (go.mod)",
     request = "launch",
     mode = "test",
-    program = "${file}",
+    program = "./${relativeFileDirname}",
     args = function()
       local input = vim.fn.input("Args: ")
       return input ~= "" and vim.split(input, " +") or {}
