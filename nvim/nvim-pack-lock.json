@@ -93,6 +93,10 @@
       "rev": "07d20fc",
       "src": "https://github.com/supermaven-inc/supermaven-nvim"
     },
+    "vim-easymotion": {
+      "rev": "b3cfab2",
+      "src": "https://github.com/easymotion/vim-easymotion"
+    },
     "vim-fugitive": {
       "rev": "61b51c0",
       "src": "https://github.com/tpope/vim-fugitive"

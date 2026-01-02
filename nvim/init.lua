@@ -18,6 +18,7 @@ vim.pack.add({
   { src = "https://github.com/tpope/vim-fugitive" },
   { src = "https://github.com/tpope/vim-surround" },
   { src = "https://github.com/tpope/vim-repeat" },
+  { src = "https://github.com/easymotion/vim-easymotion" },
   { src = "https://github.com/nvimdev/indentmini.nvim" },
   { src = "https://github.com/lewis6991/gitsigns.nvim" },
   { src = "https://github.com/stevearc/oil.nvim" },
@@ -82,6 +83,9 @@ require('nvim-treesitter.configs').setup({
   sync_install = false,
   auto_install = true,
   ignore_install = {},
+  indent = {
+    enable = true,
+  },
   highlight = {
     enable = true,
     additional_vim_regex_highlighting = false,
@@ -152,7 +156,7 @@ vim.diagnostic.config({
   update_in_insert = false,
   severity_sort = false
 })
-vim.lsp.enable({ "lua_ls", "gopls", "dartls" })
+vim.lsp.enable({ "lua_ls", "gopls", "dartls", "pyright", "ruff" })
 
 
 -- keymaps
@@ -169,6 +173,9 @@ vim.keymap.set('n', 'ga', '<cmd>ClaudeCodeAdd %<cr>', { desc = 'Add current buff
 vim.keymap.set('n', 'gy', '<cmd>ClaudeCodeDiffAccept<cr>', { desc = 'Accept diff' })
 vim.keymap.set('n', 'gn', '<cmd>ClaudeCodeDiffDeny<cr>', { desc = 'Deny diff' })
 
+vim.g.EasyMotion_smartcase = 1
+vim.g.EasyMotion_use_smartsign_us = 1
+vim.keymap.set("n", "s", "<Plug>(easymotion-overwin-f)")
 
 -- commands
 vim.api.nvim_create_user_command('RG', function(opts)

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# 使用方式: ./parse_jwt.sh "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+jwt="$1"
+
+if [ -z "$jwt" ]; then
+    echo "Usage: $0 <jwt_token>"
+    exit 1
+fi
+
+# 分割 JWT (header.payload.signature)
+IFS='.' read -r header payload signature <<< "$jwt"
+
+# Base64 URL decode 函數
+base64_url_decode() {
+    local input="$1"
+    # 補齊 padding
+    local len=$((${#input} % 4))
+    if [ $len -eq 2 ]; then input="${input}=="; fi
+    if [ $len -eq 3 ]; then input="${input}="; fi
+    # 替換 URL-safe 字元
+    echo "$input" | tr '_-' '/+' | base64 -d 2>/dev/null
+}
+
+echo "=== JWT Header ==="
+base64_url_decode "$header" | jq . 2>/dev/null || base64_url_decode "$header"
+
+echo ""
+echo "=== JWT Payload ==="
+base64_url_decode "$payload" | jq . 2>/dev/null || base64_url_decode "$payload"
+
+echo ""
+echo "=== Signature ==="
+echo "$signature"

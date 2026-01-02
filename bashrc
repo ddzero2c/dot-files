@@ -23,7 +23,10 @@ ASDF_GOLANG_MOD_VERSION_ENABLED=true
 . <(asdf completion bash)
 export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/bin:$PATH"
+
 export PATH="$PATH":"$HOME/.pub-cache/bin"
 export FLUTTER_ROOT="$(asdf where flutter)"
 

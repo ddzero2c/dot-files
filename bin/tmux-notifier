@@ -1,0 +1,8 @@
+#!/bin/bash
+msg="${1:-Done}"
+
+if [ -n "$TMUX" ]; then
+  terminal-notifier -title "$(tmux display-message -p '#S')" -message "$msg" -contentImage ~/assets/claude.svg
+else
+  terminal-notifier -title "Terminal" -message "$msg" -contentImage ~/assets/claude.svg
+fi

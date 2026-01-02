@@ -2,20 +2,26 @@
 
 set -e -x
 
+link() {
+    local src=$1
+    local dest=$2
+    [ -e "$dest" ] && mv "$dest" "${dest}.$(date +%Y%m%d-%H%M%S)-bak"
+    ln -s "$src" "$dest"
+}
+
 dotfiles="bashrc bash_profile bash_aliases bash_ps1 gitconfig tmux.conf"
 for f in $dotfiles; do
-    [ -e ~/.$f ] && mv ~/.$f ~/.${f}.$(date +%Y%m%d-%H%M%S)-bak
-    ln -s $PWD/$f ~/.$f
+    link "$PWD/$f" ~/."$f"
 done
 
-mkdir -p ~/bin ~/.bashrc.d ~/.config
+mkdir -p ~/.bashrc.d ~/.config
 configfiles="nvim"
 for f in $configfiles; do
-    [ -e ~/.$f ] && mv ~/.config/$f ~/.config/${f}.$(date +%Y%m%d-%H%M%S)-bak
-    ln -s $PWD/$f ~/.config/$f
+    link "$PWD/$f" ~/.config/"$f"
 done
 
-cp tmux-sessionizer ~/bin/
+link "$PWD/bin" ~/bin
+link "$PWD/assets" ~/assets
 
 #/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew install bash-completion
@@ -27,6 +33,7 @@ brew install kubectl
 brew install fd
 brew install ag
 brew install rg
+brew install terminal-notifier
 
 # install tpm
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm

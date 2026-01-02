@@ -8,7 +8,7 @@
     attributesfile = ~/.gitattributes
 	autocrlf = input
 [interactive]
-	diffFilter = diffr
+	; diffFilter = diffr
 [alias]
 	st = status
 	ci = commit
