@@ -4,7 +4,6 @@ tmux=/opt/homebrew/bin/tmux
 
 if [ -n "$TMUX" ]; then
   session=$(tmux display-message -t "$TMUX_PANE" -p '#S')
-  target=$(tmux display-message -t "$TMUX_PANE" -p '#S:#I.#P')
   client=$(tmux display-message -t "$TMUX_PANE" -p '#{client_tty}')
 
   terminal-notifier \
@@ -12,7 +11,7 @@ if [ -n "$TMUX" ]; then
     -message "$msg" \
     -contentImage ~/assets/claude.svg \
     -activate com.mitchellh.ghostty \
-    -execute "$tmux switch-client -c $client -t $target"
+    -execute "$tmux switch-client -c $client -t $TMUX_PANE"
 else
   terminal-notifier \
     -title "Terminal" \
