@@ -1,8 +1,23 @@
 #!/bin/bash
 msg="${1:-Done}"
+tmux=/opt/homebrew/bin/tmux
 
 if [ -n "$TMUX" ]; then
-  terminal-notifier -title "$(tmux display-message -p '#S')" -message "$msg" -contentImage ~/assets/claude.svg
+  session=$(tmux display-message -p '#S')
+  window=$(tmux display-message -p '#I')
+  pane=$(tmux display-message -p '#P')
+  target="$session:$window.$pane"
+
+  terminal-notifier \
+    -title "TMUX($session)" \
+    -message "$msg" \
+    -contentImage ~/assets/claude.svg \
+    -activate com.mitchellh.ghostty \
+    -execute "client=\$($tmux list-clients -F '#{client_tty}' 2>/dev/null | head -1); [ -n \"\$client\" ] && $tmux switch-client -c \"\$client\" -t \"$target\""
 else
-  terminal-notifier -title "Terminal" -message "$msg" -contentImage ~/assets/claude.svg
+  terminal-notifier \
+    -title "Terminal" \
+    -message "$msg" \
+    -contentImage ~/assets/claude.svg \
+    -activate com.mitchellh.ghostty
 fi
