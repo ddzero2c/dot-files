@@ -177,6 +177,11 @@ vim.g.EasyMotion_smartcase = 1
 vim.g.EasyMotion_use_smartsign_us = 1
 vim.keymap.set("n", "s", "<Plug>(easymotion-overwin-f)")
 
+vim.keymap.set('n', '<leader>g', function()
+  vim.cmd('Git')
+  vim.cmd('wincmd J')
+end)
+
 -- commands
 vim.api.nvim_create_user_command('RG', function(opts)
   local search_term = opts.args
