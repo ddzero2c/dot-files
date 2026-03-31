@@ -1,5 +1,6 @@
 vim.pack.add({
   { src = "https://github.com/mason-org/mason.nvim.git" },
+  { src = "https://github.com/neovim/nvim-lspconfig.git" },
   { src = "https://github.com/mfussenegger/nvim-dap" },
   { src = "https://github.com/nvim-neotest/nvim-nio" },
   { src = "https://github.com/rcarriga/nvim-dap-ui" },
