@@ -1,7 +1,7 @@
-vim.lsp.config('gopls', {
+return {
   settings = {
     gopls = {
       env = { GOFLAGS = "-tags=wireinject" },
     }
   }
-})
+}

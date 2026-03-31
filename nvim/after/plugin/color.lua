@@ -1,16 +1,16 @@
 vim.api.nvim_create_autocmd("OptionSet", {
   pattern = "background",
   callback = function()
-    vim.notify("Colorscheme changed to " .. vim.v.option_new)
-    if vim.v.option_new == 'dark' then
-      vim.api.nvim_set_hl(0, 'String', { fg = 'none', bg = '#3a3a3a' })
+    vim.notify("Colorscheme changed to " .. vim.o.background)
+    if vim.o.background == 'dark' then
+      vim.api.nvim_set_hl(0, 'String', { bg = '#3a3a3a' })
       vim.api.nvim_set_hl(0, 'Statement', { fg = 'NvimLightGray4', bold = true })
       vim.api.nvim_set_hl(0, 'Special', { fg = '#6a91bc', bold = true })
-      vim.api.nvim_set_hl(0, 'Type', { fg = 'none', bold = true })
+      vim.api.nvim_set_hl(0, 'Type', { bold = true })
       vim.api.nvim_set_hl(0, 'Constant', { bold = true, italic = true })
       vim.api.nvim_set_hl(0, 'Comment', { fg = 'NvimLightGray4', italic = true })
     else
-      vim.api.nvim_set_hl(0, 'String', { fg = 'none', bg = '#e3e3e3' })
+      vim.api.nvim_set_hl(0, 'String', { bg = '#e3e3e3' })
       vim.api.nvim_set_hl(0, 'Statement', { fg = 'NvimDarkGray4', bold = true })
       vim.api.nvim_set_hl(0, 'Special', { fg = '#6a91bc', bold = true })
       vim.api.nvim_set_hl(0, 'Type', { bold = true })
@@ -27,6 +27,7 @@ vim.api.nvim_create_autocmd("OptionSet", {
     vim.api.nvim_set_hl(0, "TabLine", {})
 
     local highlight_links = {
+      String = { '@string', '@string.special', '@string.escape' },
       Normal = { 'Identifier', 'Delimiter', 'Function', '@constructor', 'RenderMarkdownCode' },
       NormalFloat = { 'Pmenu' },
       Comment = { 'IndentLine' },
