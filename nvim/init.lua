@@ -1,8 +1,5 @@
 vim.pack.add({
   { src = "https://github.com/mason-org/mason.nvim.git" },
-  { src = "https://github.com/neovim/nvim-lspconfig.git" },
-  { src = "https://github.com/nvimtools/none-ls.nvim" },
-  { src = "https://github.com/nvimtools/none-ls-extras.nvim" },
   { src = "https://github.com/mfussenegger/nvim-dap" },
   { src = "https://github.com/nvim-neotest/nvim-nio" },
   { src = "https://github.com/rcarriga/nvim-dap-ui" },
@@ -26,14 +23,15 @@ vim.pack.add({
   { src = "https://github.com/olexsmir/gopher.nvim" },
 })
 require("mason").setup()
-local null_ls = require('null-ls')
-null_ls.setup({
-  sources = {
-    null_ls.builtins.diagnostics.trail_space,
-    null_ls.builtins.formatting.pg_format,
-    -- require("none-ls.diagnostics.eslint"),
-  },
-  -- debug = true,
+
+vim.api.nvim_create_autocmd('BufWinEnter', {
+  callback = function()
+    local matches = vim.fn.getmatches()
+    for _, m in ipairs(matches) do
+      if m.pattern == [[\s\+$]] then return end
+    end
+    vim.fn.matchadd('TrailingWhitespace', [[\s\+$]])
+  end
 })
 require("blink.cmp").setup({
   keymap = { preset = 'default' },
