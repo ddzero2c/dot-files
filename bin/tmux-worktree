@@ -30,18 +30,20 @@ if [[ $action == "add" ]]; then
 		exit 0
 	fi
 
-	# Create worktree - try tracking remote branch first, fall back to new branch from origin/HEAD
+	# Create worktree from remote branch if exists, otherwise from origin/HEAD
 	if git -C "$repo_root" show-ref --verify --quiet "refs/remotes/origin/$branch_name"; then
-		echo "Checking out origin/$branch_name..."
-		git -C "$repo_root" worktree add "$worktree_path" -b "$branch_name" "origin/$branch_name"
+		start_point="origin/$branch_name"
+		echo "Creating branch from origin/$branch_name..."
 	else
 		default_branch=$(git -C "$repo_root" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
 		if [[ -z $default_branch ]]; then
 			default_branch="main"
 		fi
+		start_point="origin/$default_branch"
 		echo "Creating branch from origin/$default_branch..."
-		git -C "$repo_root" worktree add "$worktree_path" -b "$branch_name" "origin/$default_branch"
 	fi
+	git -C "$repo_root" worktree add "$worktree_path" -b "$branch_name" "$start_point"
+	git -C "$repo_root" branch --unset-upstream "$branch_name" 2>/dev/null || true
 
 	# Copy .env files (supports monorepo)
 	cd "$repo_root"
