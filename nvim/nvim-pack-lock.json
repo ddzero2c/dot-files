@@ -33,21 +33,9 @@
       "rev": "e0f1e38",
       "src": "https://github.com/nvimdev/indentmini.nvim"
     },
-    "lualine.nvim": {
-      "rev": "3946f01",
-      "src": "https://github.com/nvim-lualine/lualine.nvim"
-    },
     "mason.nvim": {
       "rev": "ad7146a",
       "src": "https://github.com/mason-org/mason.nvim.git"
-    },
-    "none-ls-extras.nvim": {
-      "rev": "402c6b5",
-      "src": "https://github.com/nvimtools/none-ls-extras.nvim"
-    },
-    "none-ls.nvim": {
-      "rev": "a96172f",
-      "src": "https://github.com/nvimtools/none-ls.nvim"
     },
     "nvim-dap": {
       "rev": "6782b09",
@@ -64,10 +52,6 @@
     "nvim-nio": {
       "rev": "21f5324",
       "src": "https://github.com/nvim-neotest/nvim-nio"
-    },
-    "nvim-surround": {
-      "rev": "fcfa7e0",
-      "src": "https://github.com/kylechui/nvim-surround"
     },
     "nvim-treesitter": {
       "rev": "42fc28ba",
