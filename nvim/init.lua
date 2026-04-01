@@ -77,30 +77,24 @@ require("claudecode").setup({
     }
   }
 })
-require('nvim-treesitter.configs').setup({
-  sync_install = false,
-  auto_install = true,
-  ignore_install = {},
-  indent = {
-    enable = true,
-  },
-  highlight = {
-    enable = true,
-    additional_vim_regex_highlighting = false,
-  },
-  textobjects = {
-    select = {
-      enable = true,
-      lookahead = true,
-      keymaps = {
-        ["ia"] = "@parameter.inner",
-        ["aa"] = "@parameter.outer",
-      },
-    },
-  },
+vim.api.nvim_create_autocmd('FileType', {
+  callback = function(ev)
+    if vim.wo.diff then return end
+    local lang = vim.treesitter.language.get_lang(ev.match) or ev.match
+    if pcall(vim.treesitter.language.inspect, lang) then
+      vim.treesitter.start()
+      vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+    end
+  end,
 })
+vim.keymap.set({ 'x', 'o' }, 'ia', function()
+  require('nvim-treesitter-textobjects.select').select_textobject('@parameter.inner', 'textobjects')
+end)
+vim.keymap.set({ 'x', 'o' }, 'aa', function()
+  require('nvim-treesitter-textobjects.select').select_textobject('@parameter.outer', 'textobjects')
+end)
 require('treesitter-context').setup({
-  max_lines = 1, -- How many lines the window should span. Values <= 0 mean no limit.
+  max_lines = 1,
   trim_scope = 'inner',
   mode = 'topline',
   separator = '─'
