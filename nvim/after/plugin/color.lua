@@ -3,6 +3,10 @@ vim.api.nvim_create_autocmd("OptionSet", {
   callback = function()
     vim.notify("Colorscheme changed to " .. vim.o.background)
     if vim.o.background == 'dark' then
+      vim.api.nvim_set_hl(0, 'DiffAdd', { bg = '#001B29' })
+      vim.api.nvim_set_hl(0, 'DiffDelete', { bg = '#3D0100' })
+      vim.api.nvim_set_hl(0, 'DiffChange', { bg = '#003047' })
+      vim.api.nvim_set_hl(0, 'DiffText', { bg = '#004a70' })
       vim.api.nvim_set_hl(0, 'IndentLine', { fg = '#383838' })
       vim.api.nvim_set_hl(0, 'IndentLineCurrent', { fg = '#888888' })
       vim.api.nvim_set_hl(0, 'TrailingWhitespace', { bg = '#5c2020' })
@@ -41,6 +45,9 @@ vim.api.nvim_create_autocmd("OptionSet", {
       Special = { 'Operator' },
       Visual = { 'TabLineSel', 'StatusLine', 'PmenuSel', 'TelescopeMatching', 'QuickFixLine' },
       Statement = { 'PreProc' },
+      DiffAdd = { 'GitSignsAdd', 'GitSignsAddLn', 'GitSignsAddPreview', 'GitSignsAddInline' },
+      DiffDelete = { 'GitSignsDelete', 'GitSignsTopDelete', 'GitSignsDeleteLn', 'GitSignsDeletePreview', 'GitSignsDeleteVirtLn', 'GitSignsDeleteInline' },
+      DiffChange = { 'GitSignsChange', 'GitSignsChangeDelete', 'GitSignsChangeLn', 'GitSignsChangePreview' },
     }
 
     for to, entries in pairs(highlight_links) do
