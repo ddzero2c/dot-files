@@ -53,6 +53,10 @@
       "rev": "21f5324",
       "src": "https://github.com/nvim-neotest/nvim-nio"
     },
+    "nvim-surround": {
+      "rev": "19e39478ccf5fa2eefdb3595af2f2927d0ff2416",
+      "src": "https://github.com/kylechui/nvim-surround"
+    },
     "nvim-treesitter": {
       "rev": "42fc28ba",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter"
@@ -84,14 +88,6 @@
     "vim-fugitive": {
       "rev": "61b51c0",
       "src": "https://github.com/tpope/vim-fugitive"
-    },
-    "vim-repeat": {
-      "rev": "6584602",
-      "src": "https://github.com/tpope/vim-repeat"
-    },
-    "vim-surround": {
-      "rev": "3d188ed",
-      "src": "https://github.com/tpope/vim-surround"
     }
   }
 }

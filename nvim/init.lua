@@ -14,8 +14,7 @@ vim.pack.add({
   { src = "https://github.com/junegunn/fzf" },
   { src = "https://github.com/junegunn/fzf.vim" },
   { src = "https://github.com/tpope/vim-fugitive" },
-  { src = "https://github.com/tpope/vim-surround" },
-  { src = "https://github.com/tpope/vim-repeat" },
+  { src = "https://github.com/kylechui/nvim-surround" },
   { src = "https://github.com/easymotion/vim-easymotion" },
   { src = "https://github.com/nvimdev/indentmini.nvim" },
   { src = "https://github.com/lewis6991/gitsigns.nvim" },
@@ -107,6 +106,7 @@ require('treesitter-context').setup({
   separator = '─'
 })
 require('indentmini').setup({})
+require('nvim-surround').setup({})
 require('gitsigns').setup({
   current_line_blame = false,
   current_line_blame_opts = {
