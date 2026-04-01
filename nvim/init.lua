@@ -10,7 +10,6 @@ vim.pack.add({
   { src = "https://github.com/nvim-lua/plenary.nvim" },
   { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
   { src = "https://github.com/nvim-treesitter/nvim-treesitter-context" },
-  { src = "https://github.com/nvim-treesitter/nvim-treesitter-textobjects" },
   { src = "https://github.com/junegunn/fzf" },
   { src = "https://github.com/junegunn/fzf.vim" },
   { src = "https://github.com/tpope/vim-fugitive" },
@@ -87,12 +86,6 @@ vim.api.nvim_create_autocmd('FileType', {
     end
   end,
 })
-vim.keymap.set({ 'x', 'o' }, 'ia', function()
-  require('nvim-treesitter-textobjects.select').select_textobject('@parameter.inner', 'textobjects')
-end)
-vim.keymap.set({ 'x', 'o' }, 'aa', function()
-  require('nvim-treesitter-textobjects.select').select_textobject('@parameter.outer', 'textobjects')
-end)
 require('treesitter-context').setup({
   max_lines = 1,
   trim_scope = 'inner',
