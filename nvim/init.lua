@@ -76,16 +76,6 @@ require("claudecode").setup({
     }
   }
 })
-vim.api.nvim_create_autocmd('FileType', {
-  callback = function(ev)
-    if vim.wo.diff then return end
-    local lang = vim.treesitter.language.get_lang(ev.match) or ev.match
-    if pcall(vim.treesitter.language.inspect, lang) then
-      vim.treesitter.start()
-      vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-    end
-  end,
-})
 require('treesitter-context').setup({
   max_lines = 1,
   trim_scope = 'inner',
@@ -125,6 +115,7 @@ vim.o.tabstop = 4
 vim.o.softtabstop = 4
 vim.o.shiftwidth = 4
 vim.o.expandtab = false
+vim.o.autoindent = true
 vim.o.winborder = 'single'
 vim.o.termguicolors = true
 vim.o.statusline = "%<%f %h%m%r %= %{v:lua.lsp_status_all()} %=%-14.(%l,%c%V%) %P"
