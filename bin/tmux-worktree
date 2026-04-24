@@ -52,7 +52,7 @@ if [[ $action == "add" ]]; then
 		mkdir -p "$(dirname "$target")"
 		cp "$envfile" "$target"
 	done
-	~/bin/tmux-sessionizer "$worktree_path" "claude --dangerously-skip-permissions"
+	~/bin/tmux-sessionizer "$worktree_path" "claude"
 
 elif [[ $action == "remove" ]]; then
 	worktree_dir="$HOME/worktree/$repo_name"

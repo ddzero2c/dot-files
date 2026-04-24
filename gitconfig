@@ -1,6 +1,7 @@
 [user]
 	name = Ryder
 	email = ddzero2c@gmail.com
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL4ym/6wkm+dWzK3RyY6SEeFL/UyuWbvCSR2oOcOsdYC
 [core]
 	filemode = true
 	editor = nvim
@@ -45,3 +46,11 @@
 	date = iso
 [url "git@github.com:"]
 	insteadOf = https://github.com
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
