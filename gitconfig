@@ -1,7 +1,7 @@
 [user]
 	name = Ryder
 	email = ddzero2c@gmail.com
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL4ym/6wkm+dWzK3RyY6SEeFL/UyuWbvCSR2oOcOsdYC
+	signingkey = ~/.ssh/id_ed25519
 [core]
 	filemode = true
 	editor = nvim
@@ -49,7 +49,7 @@
 [gpg]
 	format = ssh
 [gpg "ssh"]
-	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+	allowedSignersFile = ~/.ssh/allowed_signers
 [commit]
 	gpgsign = true
 [tag]
