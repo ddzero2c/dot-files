@@ -1,0 +1,17 @@
+cmd - 1 : open -a "Ghostty"
+cmd + shift - 1 : open -a "Postico"
+cmd - 2 : open -a "Google Chrome"
+cmd + shift - 2 : open -a "Simulator"
+cmd - 3 : open -a "Claude"
+cmd - 4 : open -a "Slack"
+cmd - 9 : open -a "Calendar"
+cmd - 0 : open -a "Mail"
+cmd + shift - v : osascript -e 'delay 0.15' \
+                            -e 'tell application "System Events" to key code 49 using command down' \
+                            -e 'delay 0.25' \
+                            -e 'tell application "System Events" to key code 124' \
+                            -e 'tell application "System Events" to key code 124' \
+                            -e 'tell application "System Events" to key code 124' \
+                            -e 'tell application "System Events" to key code 124' \
+                            -e 'delay 0.1' \
+                            -e 'tell application "System Events" to key code 36'

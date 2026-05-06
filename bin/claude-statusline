@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+input=$(cat)
+
+cwd=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""')
+model=$(echo "$input" | jq -r '.model.display_name // ""')
+used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+
+# Format path like PS1: replace $HOME with ~
+home="$HOME"
+display_path="${cwd/#$home/~}"
+
+# Git branch (skip optional locks to avoid blocking)
+branch=""
+if git -C "$cwd" branch --no-optional-locks 2>/dev/null | grep -q '^\*'; then
+  branch=$(git -C "$cwd" branch --no-optional-locks 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/')
+fi
+
+# Context usage indicator
+ctx_info=""
+if [ -n "$used_pct" ]; then
+  ctx_info=$(printf " ctx:%.0f%%" "$used_pct")
+fi
+
+# Rate limit usage (Claude.ai subscription)
+rate_info=""
+five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
+week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
+  rate_parts=""
+  if [ -n "$five_pct" ]; then
+    reset_hm=""
+    [ -n "$five_reset" ] && reset_hm=$(date -r "$five_reset" +%H:%M 2>/dev/null)
+    if [ -n "$reset_hm" ]; then
+      rate_parts=$(printf "%.0f%%/5h@%s" "$five_pct" "$reset_hm")
+    else
+      rate_parts=$(printf "%.0f%%/5h" "$five_pct")
+    fi
+  fi
+  [ -n "$week_pct" ] && rate_parts="$rate_parts $(printf "%.0f%%/7d" "$week_pct")"
+  rate_info=" [$rate_parts]"
+fi
+
+printf "\e[1m\e[34m%s\e[32m%s\e[0m \e[90m%s%s%s\e[0m" \
+  "$display_path" \
+  "$branch" \
+  "$model" \
+  "$ctx_info" \
+  "$rate_info"
