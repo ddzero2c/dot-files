@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/bin/tmux-notifier \"Done, waiting for input\""
+            "command": "sid=$(jq -r .session_id); ~/bin/tmux-notifier \"Done, waiting for input\" \"$sid\""
           }
         ]
       }
@@ -19,7 +19,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/bin/tmux-notifier \"$(jq -r '.message')\""
+            "command": "input=$(cat); ~/bin/tmux-notifier \"$(jq -r .message <<<\"$input\")\" \"$(jq -r .session_id <<<\"$input\")\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sid=$(jq -r .session_id); terminal-notifier -remove \"claude-$sid\""
           }
         ]
       }

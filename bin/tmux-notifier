@@ -1,5 +1,6 @@
 #!/bin/bash
 msg="${1:-Done}"
+gid="${2:-default}"
 tmux=/opt/homebrew/bin/tmux
 
 if [ -n "$TMUX" ]; then
@@ -9,6 +10,7 @@ if [ -n "$TMUX" ]; then
   terminal-notifier \
     -title "TMUX($session)" \
     -message "$msg" \
+    -group "claude-$gid" \
     -contentImage ~/assets/claude.svg \
     -activate com.mitchellh.ghostty \
     -execute "$tmux switch-client -c $client -t $TMUX_PANE"
@@ -16,6 +18,7 @@ else
   terminal-notifier \
     -title "Terminal" \
     -message "$msg" \
+    -group "claude-$gid" \
     -contentImage ~/assets/claude.svg \
     -activate com.mitchellh.ghostty
 fi
