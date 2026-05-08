@@ -21,6 +21,57 @@ vim.pack.add({
   { src = "https://github.com/uga-rosa/ccc.nvim" },
   { src = "https://github.com/olexsmir/gopher.nvim" },
 })
+
+-- nvim-treesitter's directives assume `match[id]` is a single TSNode, but in
+-- nvim 0.12 it's a list of nodes. Re-register the affected directives, after
+-- the plugin's plugin/ script has run, so they pull the first node out.
+vim.api.nvim_create_autocmd({ "BufReadPre", "BufNewFile" }, {
+  once = true,
+  callback = function()
+    local q = require("vim.treesitter.query")
+    local opts = { force = true, all = false }
+    local function first(match, id)
+      local v = match[id]
+      if type(v) == "table" then return v[1] end
+      return v
+    end
+    local info_string_aliases = { ex = "elixir", pl = "perl", sh = "bash", uxn = "uxntal", ts = "typescript" }
+    local mimetype_languages = {
+      ["importmap"] = "json",
+      ["module"] = "javascript",
+      ["application/ecmascript"] = "javascript",
+      ["text/ecmascript"] = "javascript",
+    }
+    q.add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
+      local node = first(match, pred[2])
+      if not node then return end
+      local alias = vim.treesitter.get_node_text(node, bufnr):lower()
+      metadata["injection.language"] = vim.filetype.match({ filename = "a." .. alias })
+        or info_string_aliases[alias] or alias
+    end, opts)
+    q.add_directive("set-lang-from-mimetype!", function(match, _, bufnr, pred, metadata)
+      local node = first(match, pred[2])
+      if not node then return end
+      local val = vim.treesitter.get_node_text(node, bufnr)
+      local configured = mimetype_languages[val]
+      if configured then
+        metadata["injection.language"] = configured
+      else
+        local parts = vim.split(val, "/", {})
+        metadata["injection.language"] = parts[#parts]
+      end
+    end, opts)
+    q.add_directive("downcase!", function(match, _, bufnr, pred, metadata)
+      local id = pred[2]
+      local node = first(match, id)
+      if not node then return end
+      local text = vim.treesitter.get_node_text(node, bufnr, { metadata = metadata[id] }) or ""
+      if not metadata[id] then metadata[id] = {} end
+      metadata[id].text = string.lower(text)
+    end, opts)
+  end,
+})
+
 require("mason").setup()
 
 vim.api.nvim_create_autocmd('BufWinEnter', {
