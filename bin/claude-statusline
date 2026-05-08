@@ -15,10 +15,40 @@ if git -C "$cwd" branch --no-optional-locks 2>/dev/null | grep -q '^\*'; then
   branch=$(git -C "$cwd" branch --no-optional-locks 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/')
 fi
 
+# ANSI colors (real escape chars via $'...' so we can embed in %s args)
+GREY=$'\e[90m'
+RESET=$'\e[0m'
+# Colorblind-friendly: cyan / yellow / red. Avoid pairing red with green elsewhere.
+LOW=$'\e[96m'    # bright cyan
+MID=$'\e[93m'    # bright yellow
+HIGH=$'\e[91m'   # bright red
+
+# Rate-limit tier color: <50 grey, 50-69 cyan, 70-89 yellow, >=90 red.
+color_for_pct() {
+  local v=${1%.*}
+  if   [ "$v" -ge 90 ]; then printf '%s' "$HIGH"
+  elif [ "$v" -ge 70 ]; then printf '%s' "$MID"
+  elif [ "$v" -ge 50 ]; then printf '%s' "$LOW"
+  else                       printf '%s' "$GREY"
+  fi
+}
+
+# Context tier color: thresholds 20/50/80, sharing the rate-limit palette.
+# Below 20% stays grey to avoid noise on fresh sessions.
+ctx_color_for_pct() {
+  local v=${1%.*}
+  if   [ "$v" -ge 80 ]; then printf '%s' "$HIGH"
+  elif [ "$v" -ge 50 ]; then printf '%s' "$MID"
+  elif [ "$v" -ge 20 ]; then printf '%s' "$LOW"
+  else                       printf '%s' "$GREY"
+  fi
+}
+
 # Context usage indicator
 ctx_info=""
 if [ -n "$used_pct" ]; then
-  ctx_info=$(printf " ctx:%.0f%%" "$used_pct")
+  c=$(ctx_color_for_pct "$used_pct")
+  ctx_info=$(printf " ctx:%s%.0f%%%s" "$c" "$used_pct" "$GREY")
 fi
 
 # Rate limit usage (Claude.ai subscription)
@@ -29,19 +59,23 @@ week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empt
 if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
   rate_parts=""
   if [ -n "$five_pct" ]; then
+    c=$(color_for_pct "$five_pct")
     reset_hm=""
     [ -n "$five_reset" ] && reset_hm=$(date -r "$five_reset" +%H:%M 2>/dev/null)
     if [ -n "$reset_hm" ]; then
-      rate_parts=$(printf "%.0f%%/5h@%s" "$five_pct" "$reset_hm")
+      rate_parts=$(printf "%s%.0f%%%s/5h@%s" "$c" "$five_pct" "$GREY" "$reset_hm")
     else
-      rate_parts=$(printf "%.0f%%/5h" "$five_pct")
+      rate_parts=$(printf "%s%.0f%%%s/5h" "$c" "$five_pct" "$GREY")
     fi
   fi
-  [ -n "$week_pct" ] && rate_parts="$rate_parts $(printf "%.0f%%/7d" "$week_pct")"
+  if [ -n "$week_pct" ]; then
+    c=$(color_for_pct "$week_pct")
+    rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d" "$c" "$week_pct" "$GREY")"
+  fi
   rate_info=" [$rate_parts]"
 fi
 
-printf "\e[1m\e[34m%s\e[32m%s\e[0m \e[90m%s%s%s\e[0m" \
+printf "\e[1m\e[34m%s\e[22;35m%s\e[0m \e[90m%s%s%s\e[0m" \
   "$display_path" \
   "$branch" \
   "$model" \
