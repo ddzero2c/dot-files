@@ -50,10 +50,11 @@
     "command": "bash ~/bin/claude-statusline"
   },
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": false,
     "claude-md-management@claude-plugins-official": true,
     "github@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true
   },
   "effortLevel": "xhigh",
   "theme": "dark-daltonized",
