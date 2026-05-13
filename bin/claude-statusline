@@ -56,6 +56,7 @@ rate_info=""
 five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+week_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
 if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
   rate_parts=""
   if [ -n "$five_pct" ]; then
@@ -70,7 +71,13 @@ if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
   fi
   if [ -n "$week_pct" ]; then
     c=$(color_for_pct "$week_pct")
-    rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d" "$c" "$week_pct" "$GREY")"
+    week_reset_hm=""
+    [ -n "$week_reset" ] && week_reset_hm=$(date -r "$week_reset" +"%H:%M/%d/%b" 2>/dev/null)
+    if [ -n "$week_reset_hm" ]; then
+      rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d@%s" "$c" "$week_pct" "$GREY" "$week_reset_hm")"
+    else
+      rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d" "$c" "$week_pct" "$GREY")"
+    fi
   fi
   rate_info=" [$rate_parts]"
 fi

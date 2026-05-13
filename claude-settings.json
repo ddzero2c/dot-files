@@ -54,11 +54,14 @@
     "claude-md-management@claude-plugins-official": true,
     "github@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true
+    "feature-dev@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
   },
   "effortLevel": "xhigh",
+  "skipDangerousModePermissionPrompt": true,
   "theme": "dark-daltonized",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "systemPrompt": "Do not write code comments. Before reaching for one, exhaust the alternatives: rename, extract a helper, tighten the type, introduce an enum. Only write a comment when the code physically cannot express what's needed — external system quirks, framework gotchas, hidden invariants — and never to explain what well-named code already shows."
 }
