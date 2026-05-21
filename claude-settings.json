@@ -14,7 +14,16 @@
     "feature-dev@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "swift-lsp@claude-plugins-official": true
+    "swift-lsp@claude-plugins-official": true,
+    "claude-tmux-notifier@ddzero2c": true
+  },
+  "extraKnownMarketplaces": {
+    "ddzero2c": {
+      "source": {
+        "source": "github",
+        "repo": "ddzero2c/claude-tmux-notifier"
+      }
+    }
   },
   "syntaxHighlightingDisabled": false,
   "effortLevel": "xhigh",
