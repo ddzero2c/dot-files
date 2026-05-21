@@ -72,7 +72,7 @@ if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
   if [ -n "$week_pct" ]; then
     c=$(color_for_pct "$week_pct")
     week_reset_hm=""
-    [ -n "$week_reset" ] && week_reset_hm=$(date -r "$week_reset" +"%H:%M/%d/%b" 2>/dev/null)
+    [ -n "$week_reset" ] && week_reset_hm=$(date -r "$week_reset" +"%H:%M/%d %b" 2>/dev/null)
     if [ -n "$week_reset_hm" ]; then
       rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d@%s" "$c" "$week_pct" "$GREY" "$week_reset_hm")"
     else
