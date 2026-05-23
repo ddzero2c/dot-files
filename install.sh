@@ -24,6 +24,7 @@ link "$PWD/bin" ~/bin
 link "$PWD/assets" ~/assets
 link "$PWD/claude-settings.json" ~/.claude/settings.json
 link "$PWD/commands" ~/.claude/commands
+link "$PWD/skills" ~/.claude/skills
 
 #/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew install bash-completion
