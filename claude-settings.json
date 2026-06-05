@@ -15,7 +15,10 @@
     "frontend-design@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
-    "claude-tmux-notifier@ddzero2c": true
+    "claude-tmux-notifier@ddzero2c": true,
+    "playground@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true,
+    "chrome-devtools-mcp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ddzero2c": {
@@ -26,8 +29,9 @@
     }
   },
   "syntaxHighlightingDisabled": false,
-  "effortLevel": "xhigh",
+  "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
   "theme": "dark-daltonized",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
