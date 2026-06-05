@@ -1,23 +1,33 @@
 #!/usr/bin/env bash
 input=$(cat)
 
-cwd=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""')
-model=$(echo "$input" | jq -r '.model.display_name // ""')
-used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+# Pull every field in one jq pass (tab-separated) to avoid spawning jq per value.
+IFS=$'\t' read -r cwd model used_pct five_pct five_reset week_pct < <(
+  echo "$input" | jq -r '[
+    .cwd // .workspace.current_dir // "",
+    .model.display_name // "",
+    .context_window.used_percentage // "",
+    .rate_limits.five_hour.used_percentage // "",
+    .rate_limits.five_hour.resets_at // "",
+    .rate_limits.seven_day.used_percentage // ""
+  ] | @tsv')
 
 # Format path like PS1: replace $HOME with ~
-home="$HOME"
-display_path="${cwd/#$home/~}"
+display_path="${cwd/#$HOME/\~}"
 
 # Git branch (skip optional locks to avoid blocking)
 branch=""
-if git -C "$cwd" branch --no-optional-locks 2>/dev/null | grep -q '^\*'; then
-  branch=$(git -C "$cwd" branch --no-optional-locks 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/')
+if git -C "$cwd" --no-optional-locks branch 2>/dev/null | grep -q '^\*'; then
+  branch=$(git -C "$cwd" --no-optional-locks branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/')
 fi
 
 # ANSI colors (real escape chars via $'...' so we can embed in %s args)
 GREY=$'\e[90m'
 RESET=$'\e[0m'
+PATH_C=$'\e[1m\e[34m'   # bold blue
+BRANCH_C=$'\e[32m'      # green (matches PS1)
+MODEL_C=$'\e[36m'       # cyan
+SEP_C=$'\e[90m'         # grey separators / emoji / remaining time
 # Colorblind-friendly: cyan / yellow / red. Avoid pairing red with green elsewhere.
 LOW=$'\e[96m'    # bright cyan
 MID=$'\e[93m'    # bright yellow
@@ -44,47 +54,51 @@ ctx_color_for_pct() {
   fi
 }
 
-# Context usage indicator
 ctx_info=""
 if [ -n "$used_pct" ]; then
   c=$(ctx_color_for_pct "$used_pct")
-  ctx_info=$(printf " ctx:%s%.0f%%%s" "$c" "$used_pct" "$GREY")
+  pct=${used_pct%.*}
+  width=10
+  filled=$(( (pct * width + 50) / 100 ))
+  [ "$filled" -gt "$width" ] && filled=$width
+  bar=""
+  for ((i = 0; i < width; i++)); do
+    if [ "$i" -lt "$filled" ]; then bar+="█"; else bar+="░"; fi
+  done
+  ctx_info=$(printf "%s%s%s" "$c" "$bar" "$GREY")
 fi
+
+fmt_remain() {
+  local secs=$1
+  [ "$secs" -le 0 ] && { printf "0m"; return; }
+  local h=$((secs / 3600)) m=$(((secs % 3600) / 60))
+  if [ "$h" -gt 0 ]; then printf "%dh%dm" "$h" "$m"; else printf "%dm" "$m"; fi
+}
 
 # Rate limit usage (Claude.ai subscription)
 rate_info=""
-five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-five_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
-week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
-week_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
 if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
   rate_parts=""
   if [ -n "$five_pct" ]; then
     c=$(color_for_pct "$five_pct")
-    reset_hm=""
-    [ -n "$five_reset" ] && reset_hm=$(date -r "$five_reset" +%H:%M 2>/dev/null)
-    if [ -n "$reset_hm" ]; then
-      rate_parts=$(printf "%s%.0f%%%s/5h@%s" "$c" "$five_pct" "$GREY" "$reset_hm")
-    else
-      rate_parts=$(printf "%s%.0f%%%s/5h" "$c" "$five_pct" "$GREY")
-    fi
+    remain=""
+    [ -n "$five_reset" ] && remain=" $(fmt_remain $(($five_reset - $(date +%s))))"
+    rate_parts=$(printf "${SEP_C}⏰ %s%.0f%%%s%s" "$c" "$five_pct" "$GREY" "$remain")
   fi
   if [ -n "$week_pct" ]; then
     c=$(color_for_pct "$week_pct")
-    week_reset_hm=""
-    [ -n "$week_reset" ] && week_reset_hm=$(date -r "$week_reset" +"%H:%M/%d %b" 2>/dev/null)
-    if [ -n "$week_reset_hm" ]; then
-      rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d@%s" "$c" "$week_pct" "$GREY" "$week_reset_hm")"
-    else
-      rate_parts="$rate_parts $(printf "%s%.0f%%%s/7d" "$c" "$week_pct" "$GREY")"
-    fi
+    week_part=$(printf "${SEP_C}📅 %s%.0f%%%s" "$c" "$week_pct" "$GREY")
+    [ -n "$rate_parts" ] && rate_parts="$rate_parts | $week_part" || rate_parts="$week_part"
   fi
-  rate_info=" [$rate_parts]"
+  rate_info="$rate_parts"
 fi
 
-printf "\e[1m\e[34m%s\e[22;35m%s\e[0m \e[90m%s%s%s\e[0m" \
-  "$display_path" \
-  "$branch" \
-  "$model" \
-  "$ctx_info" \
-  "$rate_info"
+SEP=" ${SEP_C}| "
+info="${MODEL_C}${model}${GREY}"
+[ -n "$ctx_info" ] && info="${info}${SEP}${ctx_info}"
+[ -n "$rate_info" ] && info="${info}${SEP}${rate_info}"
+
+printf "%s%s%s%s%s %s%s" \
+  "$PATH_C" "$display_path" \
+  "$BRANCH_C" "$branch" "$RESET" \
+  "$info" "$RESET"
