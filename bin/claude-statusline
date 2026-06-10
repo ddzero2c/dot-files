@@ -1,31 +1,32 @@
 #!/usr/bin/env bash
 input=$(cat)
 
-# Pull every field in one jq pass (tab-separated) to avoid spawning jq per value.
-IFS=$'\t' read -r cwd model used_pct five_pct five_reset week_pct < <(
-  echo "$input" | jq -r '[
+# Pull every field in one jq pass; read line-by-line to preserve empty fields.
+_i=0
+while IFS= read -r _line; do
+  _f[_i++]="$_line"
+done < <(echo "$input" | jq -r '
     .cwd // .workspace.current_dir // "",
     .model.display_name // "",
-    .context_window.used_percentage // "",
-    .rate_limits.five_hour.used_percentage // "",
-    .rate_limits.five_hour.resets_at // "",
-    .rate_limits.seven_day.used_percentage // ""
-  ] | @tsv')
+    (.context_window.used_percentage // ""),
+    (.rate_limits.five_hour.used_percentage // ""),
+    (.rate_limits.five_hour.resets_at // ""),
+    (.rate_limits.seven_day.used_percentage // ""),
+    (.rate_limits.seven_day.resets_at // "")
+  ')
+cwd="${_f[0]}" model="${_f[1]}" used_pct="${_f[2]}"
+model="${model/ (1M context)/}"
+five_pct="${_f[3]}" five_reset="${_f[4]}"
+week_pct="${_f[5]}" week_reset="${_f[6]}"
 
-# Format path like PS1: replace $HOME with ~
-display_path="${cwd/#$HOME/\~}"
-
-# Git branch (skip optional locks to avoid blocking)
-branch=""
-if git -C "$cwd" --no-optional-locks branch 2>/dev/null | grep -q '^\*'; then
-  branch=$(git -C "$cwd" --no-optional-locks branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/')
-fi
+# Format path: strip leading $HOME, show path relative to home
+display_path="${cwd/#$HOME\//}"
+[ "$cwd" = "$HOME" ] && display_path="~"
 
 # ANSI colors (real escape chars via $'...' so we can embed in %s args)
 GREY=$'\e[90m'
 RESET=$'\e[0m'
 PATH_C=$'\e[1m\e[34m'   # bold blue
-BRANCH_C=$'\e[32m'      # green (matches PS1)
 MODEL_C=$'\e[36m'       # cyan
 SEP_C=$'\e[90m'         # grey separators / emoji / remaining time
 # Colorblind-friendly: cyan / yellow / red. Avoid pairing red with green elsewhere.
@@ -71,8 +72,11 @@ fi
 fmt_remain() {
   local secs=$1
   [ "$secs" -le 0 ] && { printf "0m"; return; }
-  local h=$((secs / 3600)) m=$(((secs % 3600) / 60))
-  if [ "$h" -gt 0 ]; then printf "%dh%dm" "$h" "$m"; else printf "%dm" "$m"; fi
+  local d=$((secs / 86400)) h=$(((secs % 86400) / 3600)) m=$(((secs % 3600) / 60))
+  if   [ "$d" -gt 0 ]; then printf "%dd%dh%dm" "$d" "$h" "$m"
+  elif [ "$h" -gt 0 ]; then printf "%dh%dm" "$h" "$m"
+  else                      printf "%dm" "$m"
+  fi
 }
 
 # Rate limit usage (Claude.ai subscription)
@@ -82,12 +86,14 @@ if [ -n "$five_pct" ] || [ -n "$week_pct" ]; then
   if [ -n "$five_pct" ]; then
     c=$(color_for_pct "$five_pct")
     remain=""
-    [ -n "$five_reset" ] && remain=" $(fmt_remain $(($five_reset - $(date +%s))))"
+    [ -n "$five_reset" ] && remain=" $(fmt_remain $((${five_reset%.*} - $(date +%s))))"
     rate_parts=$(printf "${SEP_C}⏰ %s%.0f%%%s%s" "$c" "$five_pct" "$GREY" "$remain")
   fi
   if [ -n "$week_pct" ]; then
     c=$(color_for_pct "$week_pct")
-    week_part=$(printf "${SEP_C}📅 %s%.0f%%%s" "$c" "$week_pct" "$GREY")
+    week_remain=""
+    [ -n "$week_reset" ] && week_remain=" $(fmt_remain $((${week_reset%.*} - $(date +%s))))"
+    week_part=$(printf "${SEP_C}📅 %s%.0f%%%s%s" "$c" "$week_pct" "$GREY" "$week_remain")
     [ -n "$rate_parts" ] && rate_parts="$rate_parts | $week_part" || rate_parts="$week_part"
   fi
   rate_info="$rate_parts"
@@ -98,7 +104,6 @@ info="${MODEL_C}${model}${GREY}"
 [ -n "$ctx_info" ] && info="${info}${SEP}${ctx_info}"
 [ -n "$rate_info" ] && info="${info}${SEP}${rate_info}"
 
-printf "%s%s%s%s%s %s%s" \
-  "$PATH_C" "$display_path" \
-  "$BRANCH_C" "$branch" "$RESET" \
-  "$info" "$RESET"
+printf "%s%s%s%s%s%s" \
+  "$PATH_C" "$display_path" "$RESET" \
+  "$SEP" "$info" "$RESET"

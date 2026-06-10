@@ -2,6 +2,7 @@
   "permissions": {
     "defaultMode": "auto"
   },
+  "model": "claude-fable-5[1m]",
   "statusLine": {
     "type": "command",
     "command": "bash ~/bin/claude-statusline"
@@ -29,7 +30,8 @@
     }
   },
   "syntaxHighlightingDisabled": false,
-  "effortLevel": "medium",
+  "effortLevel": "low",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark-daltonized",
