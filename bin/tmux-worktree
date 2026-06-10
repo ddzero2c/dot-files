@@ -19,10 +19,8 @@ if [[ -z $repo_root ]]; then
 	exit 1
 fi
 
-repo_name=$(basename "$repo_root")
-
 dir_name=$(echo "$branch_name" | tr '/' '-')
-worktree_path="$HOME/worktree/$repo_name/$dir_name"
+worktree_path="$repo_root/.claude/worktrees/$dir_name"
 
 if [[ $action == "add" ]]; then
 	if [[ -d $worktree_path ]]; then
@@ -59,7 +57,7 @@ if [[ $action == "add" ]]; then
 	~/bin/tmux-sessionizer "$worktree_path" "claude"
 
 elif [[ $action == "remove" ]]; then
-	worktree_dir="$HOME/worktree/$repo_name"
+	worktree_dir="$repo_root/.claude/worktrees"
 	if [[ ! -d $worktree_dir ]]; then
 		exit 0
 	fi
