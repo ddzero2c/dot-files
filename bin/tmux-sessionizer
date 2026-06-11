@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Usage: tmux-sessionizer [path [init_cmd]]
+#   path      directory to open as a session; omit to pick with fzf
+#   init_cmd  command typed into the new session after creation
 
 if [[ $# -ge 1 ]]; then
     selected=$1
@@ -11,18 +14,23 @@ if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
-tmux_running=$(pgrep tmux)
+session_name=$(basename "$selected" | tr . _)
 
-if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
-    tmux new-session -s $selected_name -c $selected
-    [[ -n $init_cmd ]] && tmux send-keys -t $selected_name "$init_cmd" Enter
-    exit 0
+has_session() {
+    tmux list-sessions -F '#S' 2>/dev/null | grep -qFx "$1"
+}
+
+switch_to() {
+    if [[ -z $TMUX ]]; then
+        tmux attach-session -t "$1"
+    else
+        tmux switch-client -t "$1"
+    fi
+}
+
+if ! has_session "$session_name"; then
+    tmux new-session -ds "$session_name" -c "$selected"
+    [[ -n $init_cmd ]] && tmux send-keys -t "$session_name" "$init_cmd" Enter
 fi
 
-if ! tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux new-session -ds $selected_name -c $selected
-    [[ -n $init_cmd ]] && tmux send-keys -t $selected_name "$init_cmd" Enter
-fi
-
-tmux switch-client -t $selected_name
+switch_to "$session_name"

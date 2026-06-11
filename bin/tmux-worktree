@@ -1,79 +1,104 @@
 #!/usr/bin/env bash
+# Usage: tmux-worktree add <branch> | remove
+#   add     create (or reuse) a worktree for <branch> under <repo>/.claude/worktrees,
+#           copy .env files from the main checkout, open a tmux session running claude
+#   remove  pick a worktree with fzf, then delete the worktree, its branch and tmux session
 
 set -e
-trap 'echo ""; echo "Failed. Press any key to close."; read -n 1' ERR
-
-action="$1"
+trap 'echo ""; echo "Failed. Press any key to close."; read -rn 1' ERR
 
 repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-
-if [[ $action == "add" ]]; then
-	branch_name="$2"
-	if [[ -z $branch_name ]]; then
-		exit 0
-	fi
-fi
-
 if [[ -z $repo_root ]]; then
 	echo "Not a git repository"
 	exit 1
 fi
 
-dir_name=$(echo "$branch_name" | tr '/' '-')
-worktree_path="$repo_root/.claude/worktrees/$dir_name"
+worktrees_dir="$repo_root/.claude/worktrees"
 
-if [[ $action == "add" ]]; then
-	if [[ -d $worktree_path ]]; then
-		~/bin/tmux-sessionizer "$worktree_path"
-		exit 0
+git_repo() {
+	git -C "$repo_root" "$@"
+}
+
+branch_exists() {
+	git_repo show-ref --verify --quiet "$1"
+}
+
+default_branch() {
+	local branch
+	branch=$(git_repo symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+	echo "${branch:-main}"
+}
+
+create_worktree() {
+	local branch=$1 path=$2
+
+	if branch_exists "refs/heads/$branch"; then
+		echo "Checking out existing branch $branch..."
+		git_repo worktree add "$path" "$branch"
+		return
 	fi
 
-	if git -C "$repo_root" show-ref --verify --quiet "refs/heads/$branch_name"; then
-		echo "Checking out existing branch $branch_name..."
-		git -C "$repo_root" worktree add "$worktree_path" "$branch_name"
-	elif git -C "$repo_root" show-ref --verify --quiet "refs/remotes/origin/$branch_name"; then
-		start_point="origin/$branch_name"
-		echo "Creating branch from origin/$branch_name..."
+	local start_point
+	if branch_exists "refs/remotes/origin/$branch"; then
+		start_point="origin/$branch"
 	else
-		default_branch=$(git -C "$repo_root" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
-		if [[ -z $default_branch ]]; then
-			default_branch="main"
-		fi
-		start_point="origin/$default_branch"
-		echo "Creating branch from origin/$default_branch..."
+		start_point="origin/$(default_branch)"
 	fi
-	if [[ -n $start_point ]]; then
-		git -C "$repo_root" worktree add "$worktree_path" -b "$branch_name" "$start_point"
-		git -C "$repo_root" branch --unset-upstream "$branch_name" 2>/dev/null || true
-	fi
+	echo "Creating branch from $start_point..."
+	git_repo worktree add "$path" -b "$branch" "$start_point"
+	git_repo branch --unset-upstream "$branch" 2>/dev/null || true
+}
 
-	# Copy .env files (supports monorepo)
-	cd "$repo_root"
-	find . -maxdepth 2 -name '.env' -not -path './.git/*' | while read -r envfile; do
-		target="$worktree_path/$envfile"
-		mkdir -p "$(dirname "$target")"
-		cp "$envfile" "$target"
-	done
-	~/bin/tmux-sessionizer "$worktree_path" "claude"
+copy_env_files() {
+	local dest=$1
+	(cd "$repo_root" && find . -maxdepth 2 -name '.env' -not -path './.git/*') |
+		while read -r envfile; do
+			mkdir -p "$dest/$(dirname "$envfile")"
+			cp "$repo_root/$envfile" "$dest/$envfile"
+		done
+}
 
-elif [[ $action == "remove" ]]; then
-	worktree_dir="$repo_root/.claude/worktrees"
-	if [[ ! -d $worktree_dir ]]; then
+add() {
+	local branch=$1
+	if [[ -z $branch ]]; then
 		exit 0
 	fi
 
-	selected=$(find "$worktree_dir" -mindepth 1 -maxdepth 1 -type d | sed "s|$worktree_dir/||" | fzf)
+	local path="$worktrees_dir/$(echo "$branch" | tr '/' '-')"
+	if [[ ! -d $path ]]; then
+		create_worktree "$branch" "$path"
+		copy_env_files "$path"
+	fi
+	~/bin/tmux-sessionizer "$path" "claude"
+}
+
+remove() {
+	if [[ ! -d $worktrees_dir ]]; then
+		exit 0
+	fi
+
+	local selected
+	selected=$(find "$worktrees_dir" -mindepth 1 -maxdepth 1 -type d | sed "s|$worktrees_dir/||" | fzf)
 	if [[ -z $selected ]]; then
 		exit 0
 	fi
 
-	selected_path="$worktree_dir/$selected"
-	session_name=$(echo "$selected" | tr . _)
+	local path="$worktrees_dir/$selected"
+	local branch
+	branch=$(git -C "$path" branch --show-current)
 
-	# Remove worktree and branch
-	git -C "$repo_root" worktree remove "$selected_path" --force
-	git -C "$repo_root" branch -D "$selected" 2>/dev/null || true
+	git_repo worktree remove "$path" --force
+	if [[ -n $branch ]]; then
+		git_repo branch -D "$branch" 2>/dev/null || true
+	fi
+	tmux kill-session -t "$(echo "$selected" | tr . _)" 2>/dev/null || true
+}
 
-	# Kill session and switch back
-	tmux kill-session -t "$session_name" 2>/dev/null || true
-fi
+case "$1" in
+add) add "$2" ;;
+remove) remove ;;
+*)
+	echo "Usage: tmux-worktree add <branch> | remove"
+	exit 1
+	;;
+esac
