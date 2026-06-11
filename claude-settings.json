@@ -31,7 +31,7 @@
   },
   "syntaxHighlightingDisabled": false,
   "effortLevel": "low",
-  "tui": "fullscreen",
+  "tui": "default",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark-daltonized",
