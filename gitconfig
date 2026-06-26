@@ -38,6 +38,13 @@
 	keepBackup = false
 [mergetool "vimdiff"]
 	cmd = nvim $MERGED
+[color "diff"]
+	meta = blue
+	frag = cyan dim
+	old = "#333333 #FFDCDC"
+	new = "#333333 #DBEDFF"
+	commit = yellow dim
+	whitespace = red reverse
 [diff]
 	tool = vimdiff
 [difftool]
