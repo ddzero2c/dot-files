@@ -171,6 +171,19 @@ vim.o.winborder = 'single'
 vim.o.termguicolors = true
 vim.o.statusline = "%<%f %h%m%r %= %{v:lua.lsp_status_all()} %=%-14.(%l,%c%V%) %P"
 vim.g.omni_sql_no_default_maps = 1
+vim.g.fzf_colors = {
+  ['hl'] = { 'fg', 'FzfAccent' },
+  ['fg+'] = { 'fg', 'Statement' },
+  ['bg+'] = { 'bg', 'Visual' },
+  ['hl+'] = { 'fg', 'FzfAccent' },
+  ['info'] = { 'fg', 'Comment' },
+  ['border'] = { 'fg', 'IndentLine' },
+  ['prompt'] = { 'fg', 'FzfAccent' },
+  ['pointer'] = { 'fg', 'FzfAccent' },
+  ['marker'] = { 'fg', 'FzfAccent' },
+  ['spinner'] = { 'fg', 'FzfAccent' },
+  ['header'] = { 'fg', 'Comment' },
+}
 _G.lsp_status_all = function()
   local c = vim.lsp.get_clients({ bufnr = 0 })
   return #c > 0 and table.concat(vim.tbl_map(function(x) return x.name end, c), ", ") or ""
