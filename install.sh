@@ -15,7 +15,7 @@ for f in $dotfiles; do
 done
 
 mkdir -p ~/.bashrc.d ~/.config ~/.claude
-configfiles="nvim"
+configfiles="nvim ghostty"
 for f in $configfiles; do
     link "$PWD/$f" ~/.config/"$f"
 done
