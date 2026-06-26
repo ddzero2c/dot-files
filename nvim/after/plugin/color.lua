@@ -17,17 +17,17 @@ vim.api.nvim_create_autocmd("OptionSet", {
       vim.api.nvim_set_hl(0, 'Constant', { bold = true, italic = true })
       vim.api.nvim_set_hl(0, 'Comment', { fg = 'NvimLightGray4', italic = true })
     else
-      vim.api.nvim_set_hl(0, 'IndentLine', { fg = '#d8d8d8' })
-      vim.api.nvim_set_hl(0, 'IndentLineCurrent', { fg = '#b0b0b0' })
-      vim.api.nvim_set_hl(0, 'TrailingWhitespace', { bg = '#ffd0d0' })
-      vim.api.nvim_set_hl(0, 'String', { bg = '#e3e3e3' })
-      vim.api.nvim_set_hl(0, 'Statement', { fg = 'NvimDarkGray4', bold = true })
-      vim.api.nvim_set_hl(0, 'Special', { fg = '#6a91bc', bold = true })
+      vim.api.nvim_set_hl(0, 'IndentLine', { fg = '#DAD7CC' })
+      vim.api.nvim_set_hl(0, 'IndentLineCurrent', { fg = '#9E9A8E' })
+      vim.api.nvim_set_hl(0, 'TrailingWhitespace', { bg = '#F2D9CD' })
+      vim.api.nvim_set_hl(0, 'String', { bg = '#F4F1E9' })
+      vim.api.nvim_set_hl(0, 'Statement', { fg = '#2B2A27', bold = true })
+      vim.api.nvim_set_hl(0, 'Special', { fg = '#5A7290', bold = true })
       vim.api.nvim_set_hl(0, 'Type', { bold = true })
       vim.api.nvim_set_hl(0, 'Constant', { bold = true, italic = true })
-      vim.api.nvim_set_hl(0, 'Comment', { fg = 'NvimDarkGray4', italic = true })
-      vim.api.nvim_set_hl(0, 'Visual', { bg = 'NvimLightGray3' })
-      vim.api.nvim_set_hl(0, 'Cursor', { bg = 'NvimDarkGray3' })
+      vim.api.nvim_set_hl(0, 'Comment', { fg = '#8C887C', italic = true })
+      vim.api.nvim_set_hl(0, 'Visual', { bg = '#EDEAE2' })
+      vim.api.nvim_set_hl(0, 'Cursor', { bg = '#D97757' })
     end
 
     -- ui
@@ -37,7 +37,7 @@ vim.api.nvim_create_autocmd("OptionSet", {
     vim.api.nvim_set_hl(0, "TabLine", {})
 
     local highlight_links = {
-      String = { '@string', '@string.special', '@string.escape' },
+      String = { '@string', '@string.special', '@string.escape', 'goFormatSpecifier' },
       Normal = { 'Identifier', 'Delimiter', 'Function', '@constructor', 'RenderMarkdownCode' },
       NormalFloat = { 'Pmenu' },
       LineNr = { 'SignColumn', 'RenderMarkdownCodeBorder', 'TreesitterContextSeparator' },

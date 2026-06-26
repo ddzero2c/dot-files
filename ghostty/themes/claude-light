@@ -1,0 +1,27 @@
+# Claude Light — near-white paper, desaturated, coral accent
+# Drop in ~/.config/ghostty/themes/ and use: theme = claude-light
+
+background = #FCFBF9
+foreground = #2B2A27
+cursor-color = #D97757
+cursor-text = #FCFBF9
+selection-background = #EDEAE2
+selection-foreground = #2B2A27
+
+# ANSI palette — low chroma, warm grey, coral on red
+palette = 0=#2B2A27
+palette = 1=#BD5D3A
+palette = 2=#6E7A52
+palette = 3=#A8843E
+palette = 4=#5A7290
+palette = 5=#8C6A82
+palette = 6=#5A8079
+palette = 7=#DAD7CC
+palette = 8=#9E9A8E
+palette = 9=#D97757
+palette = 10=#7E8A5E
+palette = 11=#BE9748
+palette = 12=#6A82A0
+palette = 13=#9E7A92
+palette = 14=#6A908A
+palette = 15=#EDEAE2

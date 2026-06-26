@@ -1,0 +1,27 @@
+# Claude Dark — warm near-black + terracotta coral
+# Drop in ~/.config/ghostty/themes/ and use: theme = claude-dark
+
+background = #262624
+foreground = #C2C0B6
+cursor-color = #D97757
+cursor-text = #262624
+selection-background = #3A3A37
+selection-foreground = #EDEAE0
+
+# ANSI palette (warm, low-contrast)
+palette = 0=#30302E
+palette = 1=#E07B5A
+palette = 2=#A3B25C
+palette = 3=#D4A85C
+palette = 4=#88A8CC
+palette = 5=#C089A4
+palette = 6=#6FB5AA
+palette = 7=#C2C0B6
+palette = 8=#6B6655
+palette = 9=#D97757
+palette = 10=#B5C46E
+palette = 11=#E3BC6E
+palette = 12=#9DBADE
+palette = 13=#D29CB6
+palette = 14=#82C7BC
+palette = 15=#EDEAE0
