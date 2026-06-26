@@ -30,5 +30,4 @@ export PATH="$HOME/bin:$PATH"
 
 export PATH="$PATH":"$HOME/.pub-cache/bin"
 export FLUTTER_ROOT="$(asdf where flutter)"
-
-
+export CLAUDE_CODE_DISABLE_MOUSE=1
