@@ -1,3 +1,4 @@
 keybind = shift+enter=text:\n
 theme = light:claude-light,dark:Catppuccin Mocha
 font-thicken = true
+font-thicken-strength = 64
