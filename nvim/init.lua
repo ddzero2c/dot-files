@@ -14,7 +14,6 @@ vim.pack.add({
   { src = "https://github.com/junegunn/fzf.vim" },
   { src = "https://github.com/tpope/vim-fugitive" },
   { src = "https://github.com/kylechui/nvim-surround" },
-  { src = "https://github.com/easymotion/vim-easymotion" },
   { src = "https://github.com/nvimdev/indentmini.nvim" },
   { src = "https://github.com/lewis6991/gitsigns.nvim" },
   { src = "https://github.com/stevearc/oil.nvim" },
@@ -213,10 +212,6 @@ vim.keymap.set('v', 'ga', '<cmd>ClaudeCodeSend<cr>', { desc = 'Send to Claude' }
 vim.keymap.set('n', 'ga', '<cmd>ClaudeCodeAdd %<cr>', { desc = 'Add current buffer' })
 vim.keymap.set('n', 'gy', '<cmd>ClaudeCodeDiffAccept<cr>', { desc = 'Accept diff' })
 vim.keymap.set('n', 'gn', '<cmd>ClaudeCodeDiffDeny<cr>', { desc = 'Deny diff' })
-
-vim.g.EasyMotion_smartcase = 1
-vim.g.EasyMotion_use_smartsign_us = 1
-vim.keymap.set("n", "s", "<Plug>(easymotion-overwin-f)")
 
 vim.keymap.set('n', '<leader>g', function()
   vim.cmd('Git')
