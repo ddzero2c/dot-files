@@ -1,0 +1,12 @@
+#!/bin/bash
+# macOS 26 (Tahoe) 的 TISSelectInputSource 程式化切換不會真正卸下 IME
+# (rime/squirrel#1140)，改用模擬系統快捷鍵 Ctrl+Space（選取上一個輸入法來源）
+# 走 UI 路徑切換。僅在恰好有兩個輸入來源（ABC + Squirrel）時是確定性的。
+cur="$(/opt/homebrew/bin/macism)"
+if [ $# -eq 0 ]; then
+  echo "$cur"
+  exit 0
+fi
+if [ "$cur" != "$1" ]; then
+  osascript -e 'tell application "System Events" to key code 49 using control down'
+fi

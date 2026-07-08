@@ -29,6 +29,10 @@
       "rev": "295e21e",
       "src": "https://github.com/olexsmir/gopher.nvim"
     },
+    "im-select.nvim": {
+      "rev": "963a4e9d528ef8a8d328eeff690593b0146d30e2",
+      "src": "https://github.com/keaising/im-select.nvim"
+    },
     "indentmini.nvim": {
       "rev": "e0f1e38",
       "src": "https://github.com/nvimdev/indentmini.nvim"

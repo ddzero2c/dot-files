@@ -19,6 +19,7 @@ vim.pack.add({
   { src = "https://github.com/stevearc/oil.nvim" },
   { src = "https://github.com/uga-rosa/ccc.nvim" },
   { src = "https://github.com/olexsmir/gopher.nvim" },
+  { src = "https://github.com/keaising/im-select.nvim" },
 })
 
 -- nvim-treesitter's directives assume `match[id]` is a single TSNode, but in
@@ -148,6 +149,12 @@ require('oil').setup({
   }
 })
 require('ccc').setup({ highlighter = { auto_enable = true, lsp = true } })
+require('im_select').setup({
+  default_im_select = "com.apple.keylayout.ABC",
+  default_command = vim.fn.expand("~/bin/im-hotkey"),
+  set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
+  set_previous_events = { "InsertEnter" },
+})
 require('gopher').setup({})
 
 -- settings
