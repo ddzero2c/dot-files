@@ -8,7 +8,7 @@ vim.pack.add({
   { src = "https://github.com/supermaven-inc/supermaven-nvim" },
   { src = "https://github.com/coder/claudecode.nvim" },
   { src = "https://github.com/nvim-lua/plenary.nvim" },
-  { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
+  { src = "https://github.com/neovim-treesitter/nvim-treesitter", version = "main" },
   { src = "https://github.com/nvim-treesitter/nvim-treesitter-context" },
   { src = "https://github.com/junegunn/fzf" },
   { src = "https://github.com/junegunn/fzf.vim" },
@@ -22,67 +22,22 @@ vim.pack.add({
   { src = "https://github.com/keaising/im-select.nvim" },
 })
 
--- nvim-treesitter's directives assume `match[id]` is a single TSNode, but in
--- nvim 0.12 it's a list of nodes. Re-register the affected directives, after
--- the plugin's plugin/ script has run, so they pull the first node out.
-vim.api.nvim_create_autocmd({ "BufReadPre", "BufNewFile" }, {
-  once = true,
-  callback = function()
-    local q = require("vim.treesitter.query")
-    local opts = { force = true, all = false }
-    local function first(match, id)
-      local v = match[id]
-      if type(v) == "table" then return v[1] end
-      return v
-    end
-    local info_string_aliases = { ex = "elixir", pl = "perl", sh = "bash", uxn = "uxntal", ts = "typescript" }
-    local mimetype_languages = {
-      ["importmap"] = "json",
-      ["module"] = "javascript",
-      ["application/ecmascript"] = "javascript",
-      ["text/ecmascript"] = "javascript",
-    }
-    q.add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
-      local node = first(match, pred[2])
-      if not node then return end
-      local alias = vim.treesitter.get_node_text(node, bufnr):lower()
-      metadata["injection.language"] = vim.filetype.match({ filename = "a." .. alias })
-        or info_string_aliases[alias] or alias
-    end, opts)
-    q.add_directive("set-lang-from-mimetype!", function(match, _, bufnr, pred, metadata)
-      local node = first(match, pred[2])
-      if not node then return end
-      local val = vim.treesitter.get_node_text(node, bufnr)
-      local configured = mimetype_languages[val]
-      if configured then
-        metadata["injection.language"] = configured
-      else
-        local parts = vim.split(val, "/", {})
-        metadata["injection.language"] = parts[#parts]
-      end
-    end, opts)
-    q.add_directive("downcase!", function(match, _, bufnr, pred, metadata)
-      local id = pred[2]
-      local node = first(match, id)
-      if not node then return end
-      local text = vim.treesitter.get_node_text(node, bufnr, { metadata = metadata[id] }) or ""
-      if not metadata[id] then metadata[id] = {} end
-      metadata[id].text = string.lower(text)
-    end, opts)
+require("nvim-treesitter").install({ "go", "python", "dart" })
+vim.api.nvim_create_autocmd("FileType", {
+  callback = function(args)
+    pcall(vim.treesitter.start, args.buf)
   end,
 })
+require('treesitter-context').setup({
+  max_lines = 1,
+  trim_scope = 'inner',
+  mode = 'topline',
+  separator = '─'
+})
+require('indentmini').setup({})
 
 require("mason").setup()
 
-vim.api.nvim_create_autocmd('BufWinEnter', {
-  callback = function()
-    local matches = vim.fn.getmatches()
-    for _, m in ipairs(matches) do
-      if m.pattern == [[\s\+$]] then return end
-    end
-    vim.fn.matchadd('TrailingWhitespace', [[\s\+$]])
-  end
-})
 require("blink.cmp").setup({
   keymap = { preset = 'default' },
   signature = { enabled = true, trigger = { enabled = true } },
@@ -127,13 +82,6 @@ require("claudecode").setup({
     }
   }
 })
-require('treesitter-context').setup({
-  max_lines = 1,
-  trim_scope = 'inner',
-  mode = 'topline',
-  separator = '─'
-})
-require('indentmini').setup({})
 require('nvim-surround').setup({})
 require('gitsigns').setup({
   current_line_blame = true,
@@ -250,6 +198,16 @@ vim.api.nvim_create_autocmd("BufReadPost", {
     if mark[1] > 1 and mark[1] <= lcount then
       pcall(vim.api.nvim_win_set_cursor, 0, mark)
     end
+  end
+})
+
+vim.api.nvim_create_autocmd('BufWinEnter', {
+  callback = function()
+    local matches = vim.fn.getmatches()
+    for _, m in ipairs(matches) do
+      if m.pattern == [[\s\+$]] then return end
+    end
+    vim.fn.matchadd('TrailingWhitespace', [[\s\+$]])
   end
 })
 
