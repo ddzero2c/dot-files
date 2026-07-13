@@ -4,7 +4,7 @@ vim.pack.add({
   { src = "https://github.com/mfussenegger/nvim-dap" },
   { src = "https://github.com/nvim-neotest/nvim-nio" },
   { src = "https://github.com/rcarriga/nvim-dap-ui" },
-  { src = "https://github.com/Saghen/blink.cmp",                           version = "v1.7.0" },
+  { src = "https://github.com/Saghen/blink.cmp",                           version = "v1.10.2" },
   { src = "https://github.com/supermaven-inc/supermaven-nvim" },
   { src = "https://github.com/coder/claudecode.nvim" },
   { src = "https://github.com/nvim-lua/plenary.nvim" },
@@ -64,7 +64,6 @@ require("blink.cmp").setup({
   sources = {
     default = { 'lsp', 'path', 'buffer' },
   },
-  fuzzy = { implementation = "lua" }
 })
 require("supermaven-nvim").setup({
   keymaps = {
