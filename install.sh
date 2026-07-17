@@ -14,7 +14,7 @@ for f in $dotfiles; do
     link "$PWD/$f" ~/."$f"
 done
 
-mkdir -p ~/.bashrc.d ~/.config ~/.claude
+mkdir -p ~/.bashrc.d ~/.config ~/.claude ~/.cursor
 configfiles="nvim ghostty"
 for f in $configfiles; do
     link "$PWD/$f" ~/.config/"$f"
@@ -25,6 +25,22 @@ link "$PWD/assets" ~/assets
 link "$PWD/claude-settings.json" ~/.claude/settings.json
 link "$PWD/commands" ~/.claude/commands
 link "$PWD/skills" ~/.claude/skills
+
+# Cursor CLI statusline — absolute path required (spawn has no shell / no ~ expansion mid-argv)
+if [ -f "$HOME/.cursor/cli-config.json" ] && command -v jq >/dev/null; then
+    tmp=$(mktemp)
+    jq --arg cmd "$HOME/bin/cursor-statusline" '
+      .statusLine = {
+        type: "command",
+        command: $cmd,
+        padding: 2,
+        updateIntervalMs: 1000,
+        timeoutMs: 4000
+      }
+    ' "$HOME/.cursor/cli-config.json" >"$tmp"
+    /bin/cp "$tmp" "$HOME/.cursor/cli-config.json"
+    rm -f "$tmp"
+fi
 
 #/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew install bash-completion

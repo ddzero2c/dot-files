@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# Cursor CLI status line — Claude-style layout:
+#   path | model | context bar | monthly usage
+# Usage comes from Cursor's DashboardService (not in the statusline stdin payload).
+input=$(cat)
+
+CACHE_FILE="${HOME}/.cursor/usage-cache.json"
+CACHE_TTL_SECS=300
+
+_i=0
+while IFS= read -r _line; do
+  _f[_i++]="$_line"
+done < <(echo "$input" | jq -r '
+    .cwd // .workspace.current_dir // "",
+    .model.display_name // "",
+    (.context_window.used_percentage // "")
+  ')
+cwd="${_f[0]}" model="${_f[1]}" used_pct="${_f[2]}"
+
+display_path="${cwd/#$HOME\//}"
+[ "$cwd" = "$HOME" ] && display_path="~"
+
+GREY=$'\e[90m'
+RESET=$'\e[0m'
+PATH_C=$'\e[1m\e[34m'
+MODEL_C=$'\e[36m'
+SEP_C=$'\e[90m'
+LOW=$'\e[96m'
+MID=$'\e[93m'
+HIGH=$'\e[91m'
+
+color_for_pct() {
+  local v=${1%.*}
+  if   [ "$v" -ge 90 ]; then printf '%s' "$HIGH"
+  elif [ "$v" -ge 70 ]; then printf '%s' "$MID"
+  elif [ "$v" -ge 50 ]; then printf '%s' "$LOW"
+  else                       printf '%s' "$GREY"
+  fi
+}
+
+ctx_color_for_pct() {
+  local v=${1%.*}
+  if   [ "$v" -ge 80 ]; then printf '%s' "$HIGH"
+  elif [ "$v" -ge 50 ]; then printf '%s' "$MID"
+  elif [ "$v" -ge 20 ]; then printf '%s' "$LOW"
+  else                       printf '%s' "$GREY"
+  fi
+}
+
+fmt_remain() {
+  local secs=$1
+  [ "$secs" -le 0 ] && { printf "0m"; return; }
+  local d=$((secs / 86400)) h=$(((secs % 86400) / 3600)) m=$(((secs % 3600) / 60))
+  if   [ "$d" -gt 0 ]; then printf "%dd%dh" "$d" "$h"
+  elif [ "$h" -gt 0 ]; then printf "%dh%dm" "$h" "$m"
+  else                      printf "%dm" "$m"
+  fi
+}
+
+ctx_info=""
+if [ -n "$used_pct" ]; then
+  c=$(ctx_color_for_pct "$used_pct")
+  pct=${used_pct%.*}
+  width=10
+  filled=$(( (pct * width + 50) / 100 ))
+  [ "$filled" -gt "$width" ] && filled=$width
+  bar=""
+  for ((i = 0; i < width; i++)); do
+    if [ "$i" -lt "$filled" ]; then bar+="█"; else bar+="░"; fi
+  done
+  ctx_info=$(printf "%s%s%s" "$c" "$bar" "$GREY")
+fi
+
+# --- monthly plan usage (cached) ---------------------------------------------
+fetch_usage_json() {
+  local token
+  token=$(security find-generic-password -s 'cursor-access-token' -a 'cursor-user' -w 2>/dev/null) || return 1
+  [ -n "$token" ] || return 1
+  curl -sS --max-time 1.5 \
+    -X POST 'https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage' \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Content-Type: application/json' \
+    -H 'Connect-Protocol-Version: 1' \
+    -d '{}' 2>/dev/null
+}
+
+load_usage() {
+  local now age raw
+  now=$(date +%s)
+
+  if [ -f "$CACHE_FILE" ]; then
+    age=$((now - $(stat -f %m "$CACHE_FILE" 2>/dev/null || echo 0)))
+    if [ "$age" -lt "$CACHE_TTL_SECS" ]; then
+      cat "$CACHE_FILE"
+      return 0
+    fi
+  fi
+
+  raw=$(fetch_usage_json) || raw=""
+  if echo "$raw" | jq -e '.planUsage.limit' >/dev/null 2>&1; then
+    printf '%s\n' "$raw" >"$CACHE_FILE"
+    printf '%s\n' "$raw"
+    return 0
+  fi
+
+  # Stale cache fallback
+  if [ -f "$CACHE_FILE" ]; then
+    cat "$CACHE_FILE"
+    return 0
+  fi
+  return 1
+}
+
+usage_info=""
+if usage_json=$(load_usage); then
+  # Web "Included Usage": First-party = autoPercentUsed, API = apiPercentUsed.
+  # Do not show spend $ — that meter also moves on Grok and is not the API pool.
+  _u=0
+  while IFS= read -r _line; do
+    _uf[_u++]="$_line"
+  done < <(echo "$usage_json" | jq -r '
+      (.planUsage.autoPercentUsed // empty),
+      (.planUsage.apiPercentUsed // empty),
+      (.billingCycleEnd // "")
+    ')
+  auto_pct="${_uf[0]}" api_pct="${_uf[1]}" cycle_end="${_uf[2]}"
+
+  if [ -n "$auto_pct" ]; then
+    pct=${auto_pct%.*}
+    c=$(color_for_pct "$pct")
+    remain=""
+    if [ -n "$cycle_end" ]; then
+      end_secs=$(( ${cycle_end%.*} / 1000 ))
+      remain=" $(fmt_remain $((end_secs - $(date +%s))))"
+    fi
+    pct_disp=$(printf '%.1f%%' "$auto_pct")
+    usage_info=$(printf "${SEP_C}💳 %s%s%s%s" "$c" "$pct_disp" "$GREY" "$remain")
+    if [ -n "$api_pct" ] && awk "BEGIN{exit !($api_pct > 0)}"; then
+      ac=$(color_for_pct "${api_pct%.*}")
+      api_disp=$(printf '%.1f%%' "$api_pct")
+      usage_info=$(printf "%s ${SEP_C}api %s%s%s" "$usage_info" "$ac" "$api_disp" "$GREY")
+    fi
+  fi
+fi
+
+SEP=" ${SEP_C}| "
+info="${MODEL_C}${model}${GREY}"
+[ -n "$ctx_info" ] && info="${info}${SEP}${ctx_info}"
+[ -n "$usage_info" ] && info="${info}${SEP}${usage_info}"
+
+printf "%s%s%s%s%s%s" \
+  "$PATH_C" "$display_path" "$RESET" \
+  "$SEP" "$info" "$RESET"
