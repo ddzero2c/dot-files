@@ -98,9 +98,10 @@ require('oil').setup({
 require('ccc').setup({ highlighter = { auto_enable = true, lsp = true } })
 require('im_select').setup({
   default_im_select = "com.apple.keylayout.ABC",
-  default_command = vim.fn.expand("~/bin/im-hotkey"),
+  default_command = "im-select",
   set_default_events = { "VimEnter", "FocusGained", "InsertLeave", "CmdlineLeave" },
   set_previous_events = { "InsertEnter" },
+  async_switch_im = false,
 })
 require('gopher').setup({})
 
