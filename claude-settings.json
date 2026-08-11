@@ -10,23 +10,26 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": false,
     "claude-md-management@claude-plugins-official": true,
-    "github@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
     "claude-tmux-notifier@ddzero2c": true,
-    "playground@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
-    "chrome-devtools-mcp@claude-plugins-official": true,
-    "clangd-lsp@claude-plugins-official": true
+    "clangd-lsp@claude-plugins-official": true,
+    "ios-simulator-skill@conorluddy": true
   },
   "extraKnownMarketplaces": {
     "ddzero2c": {
       "source": {
         "source": "github",
         "repo": "ddzero2c/claude-tmux-notifier"
+      }
+    },
+    "conorluddy": {
+      "source": {
+        "source": "github",
+        "repo": "conorluddy/ios-simulator-skill"
       }
     }
   },

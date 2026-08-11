@@ -41,8 +41,8 @@
 [color "diff"]
 	meta = blue
 	frag = cyan dim
-	old = "#333333 #FFDCDC"
-	new = "#333333 #DBEDFF"
+	old = "#333333 #FFCCCC"
+	new = "#333333 #99CCFF"
 	commit = yellow dim
 	whitespace = red reverse
 [diff]
