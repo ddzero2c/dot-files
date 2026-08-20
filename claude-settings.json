@@ -3,6 +3,7 @@
     "defaultMode": "auto"
   },
   "model": "claude-fable-5[1m]",
+  "outputStyle": "adhd",
   "statusLine": {
     "type": "command",
     "command": "bash ~/bin/claude-statusline"

@@ -25,6 +25,7 @@ link "$PWD/assets" ~/assets
 link "$PWD/claude-settings.json" ~/.claude/settings.json
 link "$PWD/commands" ~/.claude/commands
 link "$PWD/skills" ~/.claude/skills
+link "$PWD/output-styles" ~/.claude/output-styles
 
 # Cursor CLI statusline — absolute path required (spawn has no shell / no ~ expansion mid-argv)
 if [ -f "$HOME/.cursor/cli-config.json" ] && command -v jq >/dev/null; then
