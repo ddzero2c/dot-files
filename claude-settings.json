@@ -3,7 +3,29 @@
     "defaultMode": "auto"
   },
   "model": "claude-fable-5[1m]",
-  "outputStyle": "adhd",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/enforce-delegation.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/orchestrator-context.sh"
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "bash ~/bin/claude-statusline"
@@ -13,6 +35,9 @@
     "claude-md-management@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "claude-security@claude-plugins-official": true,
+    "code-modernization@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
     "claude-tmux-notifier@ddzero2c": true,
@@ -34,14 +59,15 @@
       }
     }
   },
+  "outputStyle": "adhd",
   "syntaxHighlightingDisabled": false,
   "effortLevel": "low",
   "tui": "default",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "light-daltonized",
+  "verbose": false,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "systemPrompt": "MUST NOT write code comments. Exception: the logic is truly obscure and cannot be expressed through naming or structure."
+  "skipAutoPermissionPrompt": true
 }
