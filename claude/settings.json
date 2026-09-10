@@ -2,7 +2,7 @@
   "permissions": {
     "defaultMode": "auto"
   },
-  "model": "claude-fable-5[1m]",
+  "model": "fable[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -62,6 +62,14 @@
   "outputStyle": "adhd",
   "syntaxHighlightingDisabled": false,
   "effortLevel": "low",
+  "modelSettings": {
+    "claude-fable-5": {
+      "effortLevel": "low"
+    },
+    "claude-fable-5-1": {
+      "effortLevel": "medium"
+    }
+  },
   "tui": "default",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
