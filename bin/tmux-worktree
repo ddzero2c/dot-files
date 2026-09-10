@@ -72,22 +72,45 @@ add() {
 	~/bin/tmux-sessionizer "$path" "claude"
 }
 
-remove() {
-	if [[ ! -d $worktrees_dir ]]; then
-		exit 0
-	fi
+registered_worktrees() {
+	git_repo worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}'
+}
 
+worktree_branch() {
+	git_repo worktree list --porcelain |
+		awk -v target="$1" '
+			/^worktree /{ current = substr($0, 10) }
+			/^branch refs\/heads\//{ if (current == target) { print substr($0, 19); exit } }
+		'
+}
+
+remove() {
 	local selected
-	selected=$(find "$worktrees_dir" -mindepth 1 -maxdepth 1 -type d | sed "s|$worktrees_dir/||" | fzf)
+	selected=$(
+		{
+			if [[ -d $worktrees_dir ]]; then
+				find "$worktrees_dir" -mindepth 1 -maxdepth 1 -type d
+			fi
+			registered_worktrees
+		} | sed -n "s|^$worktrees_dir/\([^/][^/]*\)$|\1|p" | sort -u | fzf
+	) || true
 	if [[ -z $selected ]]; then
 		exit 0
 	fi
 
 	local path="$worktrees_dir/$selected"
 	local branch
-	branch=$(git -C "$path" branch --show-current)
+	branch=$(worktree_branch "$path")
 
-	git_repo worktree remove "$path" --force
+	if registered_worktrees | grep -qxF "$path"; then
+		git_repo worktree remove "$path" --force || true
+		git_repo worktree prune
+	fi
+
+	if [[ -n $path && $path == "$worktrees_dir"/* && -d $path ]]; then
+		rm -rf "$path"
+	fi
+
 	if [[ -n $branch ]]; then
 		git_repo branch -D "$branch" 2>/dev/null || true
 	fi
