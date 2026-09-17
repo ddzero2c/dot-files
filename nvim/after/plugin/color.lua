@@ -16,10 +16,10 @@ local highlight_links = {
 
 local function apply_theme()
   if vim.o.background == 'dark' then
-    vim.api.nvim_set_hl(0, 'DiffAdd', { bg = '#26364A' })
-    vim.api.nvim_set_hl(0, 'DiffDelete', { bg = '#4A2A24' })
-    vim.api.nvim_set_hl(0, 'DiffChange', { bg = '#30353B' })
-    vim.api.nvim_set_hl(0, 'DiffText', { bg = '#4A6A8A' })
+    vim.api.nvim_set_hl(0, 'DiffAdd', { bg = '#004466' })
+    vim.api.nvim_set_hl(0, 'DiffDelete', { bg = '#660000' })
+    vim.api.nvim_set_hl(0, 'DiffChange', { bg = '#3E515B' })
+    vim.api.nvim_set_hl(0, 'DiffText', { bg = '#0077B3' })
     vim.api.nvim_set_hl(0, 'IndentLine', { fg = '#2C2C2A' })
     vim.api.nvim_set_hl(0, 'IndentLineCurrent', { fg = '#6E6B60' })
     vim.api.nvim_set_hl(0, 'TrailingWhitespace', { bg = '#52281F' })

@@ -18,6 +18,14 @@ export LANG="en_US.UTF-8"
 export LC_ALL="en_US.UTF-8"
 export EDITOR="nvim"
 
+# git diff colors follow macOS appearance (Claude Code dark/light-daltonized palette);
+# light values live in ~/.gitconfig, dark ones are injected here.
+if defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark; then
+  export GIT_CONFIG_COUNT=2
+  export GIT_CONFIG_KEY_0=color.diff.old GIT_CONFIG_VALUE_0="#DEDCD4 #660000"
+  export GIT_CONFIG_KEY_1=color.diff.new GIT_CONFIG_VALUE_1="#DEDCD4 #004466"
+fi
+
 ASDF_GOLANG_MOD_VERSION_ENABLED=true
 . <(asdf completion bash)
 export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
