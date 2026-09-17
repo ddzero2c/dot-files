@@ -73,7 +73,7 @@
   "tui": "default",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
-  "theme": "light-daltonized",
+  "theme": "dark-daltonized",
   "verbose": false,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,

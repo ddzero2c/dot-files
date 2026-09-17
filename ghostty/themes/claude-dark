@@ -1,27 +1,27 @@
-# Claude Dark — warm near-black + terracotta coral
+# Claude Dark — matches Claude desktop app dark mode (#151515 ground), coral accent
 # Drop in ~/.config/ghostty/themes/ and use: theme = claude-dark
 
-background = #262624
-foreground = #C2C0B6
+background = #161615
+foreground = #DEDCD4
 cursor-color = #D97757
-cursor-text = #262624
-selection-background = #3A3A37
-selection-foreground = #EDEAE0
+cursor-text = #161615
+selection-background = #2A2A28
+selection-foreground = #F2F0E8
 
-# ANSI palette (warm, low-contrast)
-palette = 0=#30302E
-palette = 1=#E07B5A
-palette = 2=#A3B25C
-palette = 3=#D4A85C
-palette = 4=#88A8CC
-palette = 5=#C089A4
-palette = 6=#6FB5AA
-palette = 7=#C2C0B6
-palette = 8=#6B6655
+# ANSI palette — low chroma, warm grey, coral on red (mirrors claude-light)
+palette = 0=#20201F
+palette = 1=#C97A5C
+palette = 2=#9BA574
+palette = 3=#C9A86A
+palette = 4=#8A9DB5
+palette = 5=#B08FA5
+palette = 6=#83AEA6
+palette = 7=#DEDCD4
+palette = 8=#83817C
 palette = 9=#D97757
-palette = 10=#B5C46E
-palette = 11=#E3BC6E
-palette = 12=#9DBADE
-palette = 13=#D29CB6
-palette = 14=#82C7BC
-palette = 15=#EDEAE0
+palette = 10=#ABB584
+palette = 11=#D8B87A
+palette = 12=#9AADC5
+palette = 13=#C09FB5
+palette = 14=#93BEB6
+palette = 15=#F2F0E8
