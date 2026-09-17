@@ -1,7 +1,7 @@
 cmd - 1 : open -a "Ghostty"
 cmd + shift - 1 : open -a "Simulator"
 cmd - 2 : open -a "Claude"
-cmd + shift - 2 : open -a "Codex"
+cmd + shift - 2 : open -a "Grok Bot"
 cmd - 3 : open -a "Google Chrome"
 cmd - 4 : open -a "Slack"
 cmd - 5 : open -a "Postico"
