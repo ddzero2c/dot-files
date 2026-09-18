@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Thin wrapper around the tmux-harbor plugin so scripts (e.g.
+# tmux-worktree) and shells can call it without knowing the plugin path.
+# Usage: tmux-harbor [command] [args]   (see `tmux-harbor -h`)
+exec "$HOME/.tmux/plugins/tmux-harbor/scripts/harbor.sh" "$@"
