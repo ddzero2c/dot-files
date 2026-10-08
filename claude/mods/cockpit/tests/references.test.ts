@@ -132,13 +132,13 @@ test('the PRs Claude Code recorded are kept with their live status, beside the b
   const kept = store(on)
   await start($)
   await clock.settle()
-  expect(brief(kept)).toEqual(['#7 open pass', 'KOC-2124* started'])
+  expect(brief(kept)).toEqual(['r#7 open pass', 'KOC-2124* started'])
   expect(scans).toEqual([['1', '/home/me/.claude/projects/-repo/s-1.jsonl']])
 
   // the next read starts where this one stopped
   await clock.advance(60_000)
   expect(scans.at(-1)).toEqual(['501', '/home/me/.claude/projects/-repo/s-1.jsonl'])
-  expect(brief(kept)).toEqual(['#7 open pass', 'KOC-2124* started'])
+  expect(brief(kept)).toEqual(['r#7 open pass', 'KOC-2124* started'])
 })
 
 test('a resumed session keeps what it kept and finds its branch again', async ($, on) => {
@@ -149,7 +149,7 @@ test('a resumed session keeps what it kept and finds its branch again', async ($
   ] })
   await start($)
   await clock.settle()
-  expect(brief(kept)).toEqual(['#7 open pass'])
+  expect(brief(kept)).toEqual(['r#7 open pass'])
 })
 
 test('the current branch\'s PR is kept as the branch\'s while it is checked out', async ($, on) => {
@@ -157,7 +157,7 @@ test('the current branch\'s PR is kept as the branch\'s while it is checked out'
   const kept = store(on)
   await start($)
   await clock.settle()
-  expect(brief(kept)).toEqual(['#5* open pass'])
+  expect(brief(kept)).toEqual(['r#5* open pass'])
 })
 
 test('at a turn\'s end the judge keeps what the session works on and drops the rest', async ($, on) => {
@@ -268,14 +268,16 @@ test('a session that predates the mod brings its transcript\'s calls, unsure unt
   expect(brief(kept)).toEqual(['C1 -'])
 })
 
-test('where a reference stands is its glyph\'s color; a PR\'s checks, or a ? while unsure, its mark', () => {
+test('a reference draws as its id, a PR by its repo; dim once finished; a PR\'s checks, or a ? while unsure, its mark', () => {
   const pr: Reference = { url: PR7, kind: 'pr', service: 'github', label: '#7', at: 1, status: { state: 'open', text: 'open', checks: 'fail' } }
-  expect(refLook(pr)).toEqual({ glyph: '⇄', color: '#4ADE80', mark: ['✗', '#F87171'] })
-  expect(refLook({ ...pr, status: { state: 'merged', text: 'merged' } })).toEqual({ glyph: '⇄', color: '#A78BFA' })
+  // an older store's `#7` draws by its repo too
+  expect(refLook(pr)).toEqual({ label: 'r#7', dim: false, tone: 'active', mark: ['✗', '#F87171'] })
+  expect(refLook({ ...pr, status: { state: 'merged', text: 'merged' } })).toEqual({ label: 'r#7', dim: true, tone: 'merged' })
   const issue: Reference = { url: ISSUE, kind: 'issue', service: 'linear', label: 'KOC-2124', at: 1, status: { state: 'started', text: 'In Progress' } }
-  expect(refLook(issue).color).toBe('#FBBF24')
-  expect(refLook({ ...issue, judge: { tool: 't', op: 'read', snippet: '' } })).toEqual({ glyph: '◆', color: '#94A3B8', mark: ['?', '#94A3B8'] })
-  expect(refLook({ url: SLACK, kind: 'link', service: 'slack', label: 'C1', at: 1 }).glyph).toBe('#')
+  expect(refLook(issue)).toEqual({ label: 'KOC-2124', dim: false, tone: 'active' })
+  expect(refLook({ ...issue, status: { state: 'done', text: 'Done' } })).toMatchObject({ dim: true, tone: 'idle' })
+  expect(refLook({ ...issue, judge: { tool: 't', op: 'read', snippet: '' } })).toEqual({ label: 'KOC-2124', dim: false, tone: 'unsure', mark: ['?', '#94A3B8'] })
+  expect(refLook({ url: SLACK, kind: 'link', service: 'slack', label: 'C1', at: 1 })).toMatchObject({ label: 'C1', tone: 'link' })
 })
 
 test('a Linear key the judge is unsure of is looked up too, and keeps its ?', async ($, on) => {
@@ -296,7 +298,7 @@ test('nothing is evicted: every PR the session recorded stays, one per url', asy
   await clock.settle()
   const labels = brief(kept).map(b => b.split(' ')[0])
   expect(labels).toHaveLength(20)
-  expect(labels).toContain('#1')
+  expect(labels).toContain('r#1')
   expect(new Set(labels).size).toBe(20)
 })
 

@@ -102,10 +102,14 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   expect(calls.some(c => c[0] === 'claude' && c.includes('--cwd') && c.includes('/Users/me/repo/koca'))).toBe(true)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect(await ui.find({ type: 'Button', text: /check pasted screenshot/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /pick a branch/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /check pasted screenshot/ })).toBeDefined()
+  // a session is not pressed; its block lights under the pointer
+  expect(await ui.find({ type: 'Button', text: /check pasted screenshot/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Box', key: 'block:ba1a6754' })).toBeDefined()
+  // what a blocked job waits on is not drawn: its group says it needs input
+  expect(await ui.find({ type: 'Text', text: /pick a branch/ })).toBeUndefined()
   // what the job's state.json reports is drawn as a reference, its glyph grey for a status not looked up
-  expect(await ui.find({ type: 'Button', key: 'ref:ba1a6754:https://github.com/o/r/pull/6220:open', text: '#6220' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: 'ref:ba1a6754:https://github.com/o/r/pull/6220:open', text: 'r#6220' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^NEEDS INPUT$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^RUNNING$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /fable 1m/ })).toBeDefined()
@@ -120,8 +124,8 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   const bars = (await ui.findAll({ type: 'Raster' })).map(r => glyphs(r.props.cells as string))
   expect(bars.map(b => b.replace(/ +$/, ''))).toEqual(['█'.repeat(15), '█'.repeat(6)])
   expect(await ui.find({ type: 'Text', text: /\d+%/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Button', text: /feature-x-38/ })).toBeDefined()
-  // the group title names the state, so a row keeps only its glyph; the footer alone counts them
+  expect(await ui.find({ type: 'Text', text: /feature-x-38/ })).toBeDefined()
+  // the group title names the state, so a row keeps only its glyph; the tally at the top counts them
   expect(await ui.find({ type: 'Text', text: /^! +$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^\+ +$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^! needs you +$/ })).toBeUndefined()
@@ -135,31 +139,6 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   expect(await desk.findAll({ type: 'Svg' })).toHaveLength(2)
   expect(await desk.findAll({ type: 'Raster' })).toHaveLength(0)
   await desk.unmount()
-})
-
-test('pressing a row copies the command that opens it; pressing a PR link opens the PR', async ($, on) => {
-  const calls: string[][] = []
-  const copied: string[] = []
-  wire(on, calls, AGENTS_JSON, false)
-  on('ui.copy', (_$, e) => {
-    copied.push(e.text)
-    return { value: { isCopied: true } }
-  })
-  await openPane($)
-  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-
-  await ui.press({ key: 'row:10a5276a-0000' })
-  expect(copied).toEqual(['claude --resume 10a5276a-0000'])
-  expect(calls.some(c => c[0] === 'tmux')).toBe(false)
-
-  await ui.press({ key: 'ref:ba1a6754:https://github.com/o/r/pull/6220:open' })
-  expect(calls.some(c => c[0] === 'open' && c[1] === 'https://github.com/o/r/pull/6220')).toBe(true)
-
-  // pressing this session's own row only says so
-  copied.length = 0
-  await ui.press({ key: 'row:ba1a6754' })
-  expect(copied).toEqual([])
-  await ui.unmount()
 })
 
 test('an interactive session waiting on a prompt counts as needs input; stopped and crashed jobs get their own marks', async ($, on) => {
@@ -176,42 +155,14 @@ test('an interactive session waiting on a prompt counts as needs input; stopped 
   )
   await openPane($)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  const buttons = (await ui.findAll({ type: 'Button' })).map(n => n.text)
-  expect(buttons.indexOf('asking-you')).toBeGreaterThanOrEqual(0)
-  expect(buttons.indexOf('asking-you')).toBeLessThan(buttons.indexOf('in-shell'))
+  const names = (await ui.findAll({ type: 'Text' })).map(n => n.text)
+  expect(names.indexOf('asking-you')).toBeGreaterThanOrEqual(0)
+  expect(names.indexOf('asking-you')).toBeLessThan(names.indexOf('in-shell'))
   expect(await ui.find({ type: 'Text', text: /^! 1 needs you$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /running a command/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /■/ })).toBeDefined()
-  expect(await ui.find({ type: 'Button', text: /^halted$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^halted/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /crashed · restarting/ })).toBeDefined()
-  await ui.unmount()
-})
-
-test('pressing a finished background job resumes it here through /resume', async ($, on) => {
-  const calls: string[][] = []
-  const resumed: string[] = []
-  wire(
-    on,
-    calls,
-    JSON.stringify([
-      { id: 'me00', cwd: '/r', kind: 'interactive', startedAt: 1, sessionId: 'ba1a6754-0000', name: 'me', status: 'busy', pid: 1 },
-      { id: 'j1', cwd: '/r', kind: 'background', startedAt: 1, sessionId: 'j1-session', name: 'finished-job', state: 'done' },
-      { id: 'j2', cwd: '/r', kind: 'background', startedAt: 1, sessionId: 'j2-session', name: 'live-job', state: 'blocked', status: 'idle', pid: 9 },
-    ]),
-  )
-  on('command.run', { command: 'resume' }, (_$, e) => {
-    resumed.push(e.args)
-    return { text: 'resumed' }
-  })
-  await openPane($)
-  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-
-  await ui.press({ key: 'row:j1' })
-  expect(resumed).toEqual(['j1-session'])
-
-  // a job whose worker is alive is not resumable from here: its attach command is copied instead
-  await ui.press({ key: 'row:j2' })
-  expect(resumed).toEqual(['j1-session'])
   await ui.unmount()
 })
 
@@ -252,7 +203,7 @@ test('the scope toggle drops --cwd to list every session, names each row\'s repo
   await ui.unmount()
 })
 
-test('a row shows its session\'s references: a glyph colored by where each stands, its id a Button that opens it', async ($, on) => {
+test('a row shows its session\'s references: each id a Button that opens it, a PR by its repo, dim once finished', async ($, on) => {
   const calls: string[][] = []
   wire(on, calls)
   const PR = 'https://github.com/o/r/pull/6220'
@@ -269,13 +220,15 @@ test('a row shows its session\'s references: a glyph colored by where each stand
   await openPane($)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
 
-  expect(await ui.find({ type: 'Button', key: `ref:ba1a6754:${PR}:open`, text: '#6220' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: `ref:ba1a6754:${PR}:open`, text: 'r#6220' })).toBeDefined()
   expect(await ui.find({ type: 'Button', key: `ref:ba1a6754:${ISSUE}:open`, text: 'KOC-2124' })).toBeDefined()
-  const glyphs = await ui.findAll({ type: 'Text', text: /^[⇄◆]$/ })
-  expect(glyphs.map(g => [g.text, g.props.color])).toEqual([['⇄', '#A78BFA'], ['◆', '#FBBF24']])
+  // the merged PR is dim, the issue in progress is not; nothing stands before an id
+  expect((await ui.find({ type: 'Button', key: `ref:ba1a6754:${PR}:open` }))!.props.dimColor).toBe(true)
+  expect((await ui.find({ type: 'Button', key: `ref:ba1a6754:${ISSUE}:open` }))!.props.dimColor).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /^[⇄◆]$/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: '✓' })).toBeDefined()
   // the job's own report of the same PR is not drawn twice
-  expect(await ui.findAll({ type: 'Button', text: '#6220' })).toHaveLength(1)
+  expect(await ui.findAll({ type: 'Button', text: 'r#6220' })).toHaveLength(1)
 
   await ui.press({ key: `ref:ba1a6754:${PR}:open` })
   expect(calls.some(c => c[0] === 'open' && c[1] === PR)).toBe(true)
@@ -290,10 +243,40 @@ test('a session with no cockpit of its own shows the PRs Claude Code recorded in
   await openPane($)
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   // the interactive session (no store of references): its transcript, read from the start
-  expect(await ui.find({ type: 'Button', key: `ref:10a5276a-0000:${PR}:open`, text: '#77' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: `ref:10a5276a-0000:${PR}:open`, text: 'r#77' })).toBeDefined()
   const scan = calls.find(c => c[0] === 'sh')!
   expect(scan.slice(4)).toEqual(['1', '/Users/me/.claude/projects/-Users-me-repo-koca--claude-worktrees-feature-x/10a5276a-0000.jsonl'])
   // the background job is not read: its children are the same records, already there
   expect(calls.filter(c => c[0] === 'sh')).toHaveLength(1)
   await ui.unmount()
 })
+
+test('the app draws each session as a card and each reference as a chip, with no title of its own', async ($, on) => {
+  const calls: string[][] = []
+  wire(on, calls)
+  const PR = 'https://github.com/o/r/pull/6220'
+  on('store.get', (_$, e) => ({
+    value: e.key === 'references:ba1a6754-0000'
+      ? [{ url: PR, kind: 'pr', service: 'github', label: 'r#6220', at: 1, status: { state: 'merged', text: 'merged' } }]
+      : undefined,
+  }))
+  await openPane($)
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  // the pane's frame names it; the tally and the scope toggle sit at the top
+  expect(await ui.find({ type: 'Text', text: /^Sessions/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'scope', text: '[repo]' })).toBeDefined()
+  // this session's card is edged blue, another's slate
+  const self = await ui.find({ type: 'Box', key: 'block:ba1a6754' })
+  expect(self!.props).toMatchObject({ borderStyle: 'round', borderColor: '#60A5FA' })
+  expect((await ui.find({ type: 'Box', key: 'block:10a5276a-0000' }))!.props).toMatchObject({ borderStyle: 'round', borderColor: '#2F3746' })
+  // a merged PR's chip is tinted purple
+  expect((await ui.find({ type: 'Box', key: `ref:ba1a6754:${PR}` }))!.props).toMatchObject({ backgroundColor: '#2D2547', paddingX: 1 })
+  await ui.unmount()
+
+  // the terminal keeps its title and plain blocks
+  const term = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await term.find({ type: 'Text', text: /^Sessions/ })).toBeDefined()
+  expect((await term.find({ type: 'Box', key: 'block:10a5276a-0000' }))!.props.borderStyle).toBeUndefined()
+  await term.unmount()
+})
+

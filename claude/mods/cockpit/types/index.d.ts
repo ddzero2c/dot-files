@@ -16,8 +16,6 @@ export type FleetRow = {
   state?: string
   /** Live process status: busy | idle */
   status?: string
-  /** What a blocked job is waiting on (its state.json `needs`). */
-  needs?: string
   /** Linked artifacts the job reported (its state.json `children`): PRs, issues. */
   links: FleetLink[]
   /** Context window use: tokens in the last request and the window they count against. */

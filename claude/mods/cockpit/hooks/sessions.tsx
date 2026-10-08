@@ -1,9 +1,10 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface as Engine, Register, RenderSurface } from 'claude-code'
+import type { EngineInterface as Engine, Register } from 'claude-code'
 
 import type { FleetLink, FleetRow, FleetView, Reference } from '../types'
 import { barCells, barRects, level, packCells } from './bar'
 import { refLook, refOfUrl } from './references'
+import type { RefTone } from './references'
 import { cells, fit, pad } from './text'
 import { parsePrLinkScan, prLinkScan, transcriptPath } from './transcript'
 
@@ -41,7 +42,6 @@ type AgentsJsonRow = {
 
 type JobState = {
   state?: string
-  needs?: string | null
   children?: Array<{ id?: string; href?: string; kind?: string }> | null
 }
 
@@ -309,7 +309,6 @@ const refresh = async ($: Engine): Promise<void> => {
           startedAt: r.startedAt,
           state: job.state ?? r.state,
           status: r.status,
-          needs: job.needs ?? undefined,
           links: [
             ...(job.children ?? []).flatMap((c): FleetLink[] =>
               c.href ? [{ id: c.id ?? c.href, href: c.href, kind: c.kind ?? 'link' }] : [],
@@ -339,45 +338,6 @@ const refresh = async ($: Engine): Promise<void> => {
 }
 
 // ---- actions -----------------------------------------------------------------
-
-/** The command that opens a session elsewhere: `claude attach` for a background job, `--resume` otherwise. */
-const commandFor = (row: FleetRow): string =>
-  row.kind === 'background' ? `claude attach ${row.key}` : `claude --resume ${row.sessionId}`
-
-/** A session whose process is alive somewhere: the engine refuses to resume those from a second place. */
-const isLiveElsewhere = (row: FleetRow): boolean =>
-  row.kind === 'interactive' ||
-  row.pid !== undefined ||
-  row.status !== undefined ||
-  !['done', 'failed', 'stopped'].includes(row.state ?? '')
-
-/**
- * Enter / click on a row. A finished session is opened right here through the
- * built-in `/resume <id>`, as the agents view's Enter does; one still running
- * elsewhere cannot be (the engine refuses: "already open in another running
- * Claude session"), so the command that opens it is copied instead.
- */
-const activate = async ($: Engine, row: FleetRow, surface: RenderSurface) => {
-  if (row.isSelf) {
-    $.ui.toast('this session')
-    return
-  }
-  if (!isLiveElsewhere(row)) {
-    $.ui.toast(`resuming ${row.name}…`)
-    try {
-      await $.command.run({ command: 'resume', args: row.sessionId })
-      return
-    } catch (err) {
-      $.ui.toast(`resume failed: ${err instanceof Error ? err.message : String(err)}`, { timeoutMs: 6000 })
-    }
-  }
-  const cmd = commandFor(row)
-  const copied = await $.ui.copy({ text: cmd, surface }).catch(() => ({ isCopied: false as const }))
-  const where = row.where ? ` · running in ${row.where}` : row.kind === 'background' ? ' · still running' : ''
-  $.ui.toast(copied.isCopied ? `copied: ${cmd}${where}` : `${cmd}${where}`, {
-    timeoutMs: 6000,
-  })
-}
 
 const openLink = async ($: Engine, href: string) => {
   const r = await $.process.run(['open', href], { timeoutMs: 5000 }).catch(() => undefined)
@@ -442,6 +402,25 @@ const elapsed = (startedAt: number, now: number): string => {
 /** Terminal: `cells` wide, filled to 1/8 of a cell. */
 const barRaster = (pct: number, cells: number) => ({ cells: packCells(barCells(pct, cells, level(pct))), columns: cells })
 
+const LINK_BLUE = '#60A5FA'
+
+// ---- the app's look (a desktop surface draws borders, fills and gaps the terminal's grid does not) ----
+
+/** A session's card: a faint fill, a rounded edge that brightens under the pointer, this session's in blue. */
+const CARD = { fill: '#1F2430', edge: '#2F3746', hover: '#64748B', self: LINK_BLUE }
+/** A reference's chip, its fill by where it stands. */
+const CHIP: Record<RefTone, string> = {
+  active: '#1F3A2C',
+  merged: '#2D2547',
+  idle: '#2A303B',
+  link: '#1D3044',
+  unsure: '#2A303B',
+}
+/** What a card's border and padding take of the pane's width. */
+const CARD_CELLS = 4
+// a session's block under the pointer: a slate a step above the terminal's dark, apart from this session's own grey
+const BLOCK_HOVER = '#2B3445'
+
 const PX_PER_CELL = 7.9 // monospace advance at 13px, as the band's
 
 /** Desktop: the same rounded track, 14px tall. */
@@ -465,11 +444,6 @@ const toggleScope = async ($: Engine) => {
   $.ui.invalidate('ui.render')
   await refresh($)
   $.ui.invalidate('ui.render')
-}
-
-const oneLine = (text: string, max: number): string => {
-  const flat = text.replace(/\s+/g, ' ').trim()
-  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat
 }
 
 // ---- hooks -------------------------------------------------------------------
@@ -518,10 +492,11 @@ export const registerSessions: Register = on => {
     const view = await read($, fleet)
     const isAll = await read($, allRepos)
     const now = Date.now()
-    const width = Math.max(10, e.props.bodyColumns)
+    // the app draws cards and chips, and needs no title of its own: its pane's frame names it
+    const isApp = e.surface !== 'terminal'
+    const width = Math.max(10, e.props.bodyColumns - (isApp ? CARD_CELLS : 0))
     const sorted = [...view.rows].sort((a, b) => tone(a).rank - tone(b).rank || b.startedAt - a.startedAt)
     const count = (rank: number) => sorted.filter(r => tone(r).rank === rank).length
-    // The footer, as Dom's: one colored count per state that has any; the only tally in the pane.
     const tally = [
       { n: count(0), glyph: '!', color: 'error', label: 'needs you' },
       { n: count(1), glyph: '+', color: 'claude', label: 'running' },
@@ -534,18 +509,44 @@ export const registerSessions: Register = on => {
     const nameCells = Math.max(4, width - LABEL_CELLS)
     const groups = ['needs input', 'running', 'idle', 'finished'] as const
 
+    // Scope toggle: this repo's sessions, or every session on the machine.
+    const scope = <Button key="scope" plain dimColor label={scopeLabel} onPress={() => void toggleScope($)} />
+
+    // The tally, one colored count per state that has any: the only one in the pane.
+    const counts = (
+      <Text wrap="truncate-end">
+        {/* Two spaces between counts: idle's own glyph is a `·`, so a `·` separator would double it. */}
+        {tally.map((c, i) => (
+          <Text key={c.label}>
+            {i > 0 ? '  ' : null}
+            <Text color={c.color}>{`${c.glyph} ${c.n} ${c.label}`}</Text>
+          </Text>
+        ))}
+      </Text>
+    )
+
     let group: string | undefined
     return (
       <Box flexDirection="column">
-        <Box flexDirection="row" justifyContent="space-between">
-          <Text bold>{fit(TITLE, Math.max(0, width - scopeLabel.length - 1))}</Text>
-          {/* Scope toggle: this repo's sessions, or every session on the machine. */}
-          <Button key="scope" plain dimColor label={scopeLabel} onPress={() => void toggleScope($)} />
-        </Box>
+        {/* At the top: the app's frame names the pane, so its tally sits beside the scope toggle; the */}
+        {/* terminal (which draws no frame title for a lone pane) keeps its title there and the tally below. */}
+        {isApp ? (
+          <Box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+            {counts}
+            {scope}
+          </Box>
+        ) : (
+          <Box flexDirection="column" marginBottom={tally.length > 0 ? 1 : 0}>
+            <Box flexDirection="row" justifyContent="space-between">
+              <Text bold>{fit(TITLE, Math.max(0, width - scopeLabel.length - 1))}</Text>
+              {scope}
+            </Box>
+            {tally.length > 0 ? counts : null}
+          </Box>
+        )}
         {sorted.length === 0 && <Text dimColor>{empty}</Text>}
         {sorted.map(row => {
           const t = tone(row)
-          const note = t.rank === 0 ? row.needs : undefined
           const line = (text: string) => fit(text, width)
           const pct =
             row.context && row.context.window > 0
@@ -586,18 +587,29 @@ export const registerSessions: Register = on => {
                   {fit(title.toUpperCase(), width)}
                 </Text>
               ) : null}
-              {/* The row's name is a Button: the pane's focus ring walks these (↑/↓ per keybindings), Enter or a click acts. */}
-              {/* This session's block sits on the theme's own-message background; text keeps its colors. */}
-              <Box flexDirection="column" {...(self ? { backgroundColor: 'userMessageBackground' } : {})}>
+              {/* A session is not pressed: under the pointer its block lights, to show which lines are its; */}
+              {/* only its references open. This session's block sits on the theme's own-message background; */}
+              {/* in the app each is a card, its edge brightening under the pointer, this session's blue. */}
+              <Box
+                key={`block:${row.key}`}
+                flexDirection="column"
+                {...(isApp
+                  ? {
+                      borderStyle: 'round',
+                      borderColor: self ? CARD.self : CARD.edge,
+                      backgroundColor: CARD.fill,
+                      paddingX: 1,
+                      marginBottom: 1,
+                      hover: { borderColor: self ? CARD.self : CARD.hover },
+                    }
+                  : {
+                      hover: { backgroundColor: BLOCK_HOVER },
+                      ...(self ? { backgroundColor: 'userMessageBackground' } : {}),
+                    })}
+              >
                 <Box flexDirection="row">
                   <Text color={t.color}>{pad(t.glyph, LABEL_CELLS)}</Text>
-                  <Button
-                    key={`row:${row.key}`}
-                    plain
-                    label={fit(row.name, nameCells)}
-                    {...(self ? { autoFocus: true as const } : {})}
-                    onPress={press => void activate($, row, press.surface)}
-                  />
+                  <Text>{fit(row.name, nameCells)}</Text>
                 </Box>
                 <Text dimColor wrap="truncate-end">
                   {line(meta)}
@@ -609,44 +621,41 @@ export const registerSessions: Register = on => {
                     {track}
                   </Box>
                 )}
-                {/* The session's references: where each stands by its glyph's color, its id a Button that opens it, */}
-                {/* lit under the pointer and the focus as a row's name is. */}
+                {/* The session's references: each its id, a Button that opens it, dim once finished, then its mark. */}
+                {/* Indented by spaces as the meta and model lines are, so they line up on a proportional font too. */}
                 {refs.length > 0 ? (
-                  <Box flexDirection="row" flexWrap="wrap" columnGap={2} paddingLeft={3}>
+                  <Box flexDirection="row">
+                    <Text>{' '.repeat(LABEL_CELLS)}</Text>
+                    <Box flexDirection="row" flexWrap="wrap" columnGap={isApp ? 1 : 2} rowGap={isApp ? 1 : 0}>
                     {refs.map(r => {
                       const look = refLook(r)
                       return (
-                        <Box key={`ref:${row.key}:${r.url}`} flexDirection="row" columnGap={1}>
-                          <Text color={look.color}>{look.glyph}</Text>
-                          <Button key={`ref:${row.key}:${r.url}:open`} plain label={r.label} onPress={() => void openLink($, r.url)} />
+                        // in the app a chip, tinted by where it stands
+                        <Box
+                          key={`ref:${row.key}:${r.url}`}
+                          flexDirection="row"
+                          {...(isApp ? { backgroundColor: CHIP[look.tone], paddingX: 1 } : {})}
+                        >
+                          <Button
+                            key={`ref:${row.key}:${r.url}:open`}
+                            plain
+                            label={look.label}
+                            {...(look.dim ? { dimColor: true } : {})}
+                            // under the pointer it reads as a link: blue and underlined, not the row's inverse
+                            hover={{ color: LINK_BLUE, underline: true, inverse: false }}
+                            onPress={() => void openLink($, r.url)}
+                          />
                           {look.mark ? <Text color={look.mark[1]}>{look.mark[0]}</Text> : null}
                         </Box>
                       )
                     })}
+                    </Box>
                   </Box>
-                ) : null}
-                {note ? (
-                  <Text color={t.rank === 0 ? 'error' : undefined} dimColor={t.rank !== 0} wrap="truncate-end">
-                    {line(`   ${oneLine(note, 400)}`)}
-                  </Text>
                 ) : null}
               </Box>
             </Box>
           )
         })}
-        {tally.length > 0 ? (
-          <Box marginTop={1}>
-            <Text wrap="truncate-end">
-              {/* Two spaces between counts: idle's own glyph is a `·`, so a `·` separator would double it. */}
-              {tally.map((c, i) => (
-                <Text key={c.label}>
-                  {i > 0 ? '  ' : null}
-                  <Text color={c.color}>{`${c.glyph} ${c.n} ${c.label}`}</Text>
-                </Text>
-              ))}
-            </Text>
-          </Box>
-        ) : null}
       </Box>
     )
   })

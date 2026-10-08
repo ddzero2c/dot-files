@@ -40,7 +40,13 @@ const SERVICES: [RegExp, string][] = [
 
 type Ref = Omit<Reference, 'at'>
 
-const prRef = (url: string): Ref => ({ url, kind: 'pr', service: 'github', label: `#${url.split('/').at(-1)}` })
+/** `https://github.com/foodaylabs/koca/pull/6284` → `koca#6284`. */
+const prLabel = (url: string) => {
+  const [, , , , repo = '', , n = ''] = url.split('/')
+  return `${repo}#${n}`
+}
+
+const prRef = (url: string): Ref => ({ url, kind: 'pr', service: 'github', label: prLabel(url) })
 
 const issueRef = (url: string): Ref => {
   const key = url.split('/issue/')[1]!.split('/')[0]!
@@ -293,7 +299,8 @@ const syncOnce = async ($: Engine) => {
   const fresh = await Promise.all([...refs, ...branch].map(async (r): Promise<Reference> => {
     if (r.kind === 'pr') {
       const v = pr?.url === r.url ? pr : await viewPr($, r.url, cwd)
-      return v ? { ...r, title: v.title, status: prStatus(v) } : r
+      // an older store's `#7` takes its repo as it is looked at again
+      return { ...r, label: prLabel(r.url), ...(v ? { title: v.title, status: prStatus(v) } : {}) }
     }
     if (r.kind === 'issue') {
       const v = await viewIssue($, r.label)
@@ -344,29 +351,32 @@ const queue = ($: Engine, before?: () => Promise<void>): Promise<void> => {
   return running
 }
 
-// ---- how a reference looks wherever it is drawn: a glyph and a color for where it stands ----
+// ---- how a reference looks wherever it is drawn: its id, dim once it is finished, and a mark ----
 
 const MUTED = '#94A3B8'
-const STATE_COLOR: Record<RefStatus['state'], string> = {
-  open: '#4ADE80',
-  draft: MUTED,
-  merged: '#A78BFA',
-  closed: '#F87171',
-  todo: MUTED,
-  started: '#FBBF24',
-  done: '#4ADE80',
-  canceled: '#F87171',
-}
+const FINISHED: RefStatus['state'][] = ['merged', 'closed', 'done', 'canceled']
 const CHECK_MARK = { pass: ['✓', '#4ADE80'], fail: ['✗', '#F87171'], pending: ['●', '#FBBF24'] } as const
 const UNSURE_MARK = ['?', MUTED] as const
 
+/** Where a reference stands, for a surface that can tint it: in play, merged, at rest, a link with no status, or unsure. */
+export type RefTone = 'active' | 'merged' | 'idle' | 'link' | 'unsure'
+
+const toneOf = (r: Reference): RefTone =>
+  r.judge ? 'unsure'
+  : !r.status ? (r.kind === 'link' ? 'link' : 'idle')
+  : r.status.state === 'open' || r.status.state === 'started' ? 'active'
+  : r.status.state === 'merged' ? 'merged'
+  : 'idle'
+
 /**
- * The glyph and its color (where the reference stands), and its mark: a PR's checks, or a `?` while the
- * judge has not said the session works on it, its glyph then dim too.
+ * Its id as drawn (a PR by its repo, `koca#6284`, whatever label an older store kept), dim once it is
+ * finished, its tone, and its mark: a PR's checks, or a `?` while the judge has not said the session
+ * works on it.
  */
-export const refLook = (r: Reference): { glyph: string; color: string; mark?: readonly [string, string] } => ({
-  glyph: r.kind === 'pr' ? '⇄' : r.kind === 'issue' ? '◆' : r.service === 'slack' ? '#' : '↗',
-  color: r.judge ? MUTED : r.status ? STATE_COLOR[r.status.state] : r.kind === 'link' ? '#38BDF8' : MUTED,
+export const refLook = (r: Reference): { label: string; dim: boolean; tone: RefTone; mark?: readonly [string, string] } => ({
+  label: r.kind === 'pr' ? prLabel(r.url) : r.label,
+  dim: r.status !== undefined && FINISHED.includes(r.status.state),
+  tone: toneOf(r),
   ...(r.judge ? { mark: UNSURE_MARK } : r.status?.checks ? { mark: CHECK_MARK[r.status.checks] } : {}),
 })
 
