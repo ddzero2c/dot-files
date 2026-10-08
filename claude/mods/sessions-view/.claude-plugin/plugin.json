@@ -1,0 +1,9 @@
+{
+  "name": "sessions-view",
+  "version": "0.1.0",
+  "description": "A persistent Sessions pane mirroring `claude agents`: every Claude session on this machine with its state, what it needs, and how long it has run",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Ryder"
+  }
+}

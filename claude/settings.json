@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_PLUGIN_DIRS": "~/repo/dot-files/claude/mods/sessions-view"
+  },
   "permissions": {
     "defaultMode": "auto"
   },
@@ -47,7 +50,7 @@
       "effortLevel": "medium"
     }
   },
-  "tui": "default",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark-daltonized",
