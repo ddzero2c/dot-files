@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface as Engine, Register, RenderSurface } from 'claude-code'
 
 import type { FleetLink, FleetRow, FleetView } from '../types'
-import { fit } from './text'
+import { cells, fit, pad } from './text'
 
 const PANE = 'sessions-view'
 const TITLE = 'Sessions'
@@ -11,6 +11,8 @@ const POLL_MS = 2000
 const DOCK_SHARE = 0.2
 const DOCK_MIN_COLUMNS = 28
 const BAR_CELLS = 20
+/** Cells for the status glyph and its gap, so names line up with the indented lines below. */
+const LABEL_CELLS = 3
 
 const fleet = atom({ plugin: 'sessions-view', key: 'fleet' } as const, {
   rows: [],
@@ -409,62 +411,43 @@ const linkLabel = (link: FleetLink): string => (link.kind === 'pr' || link.kind 
 
 // ---- presentation ------------------------------------------------------------
 
-type Tone = { glyph: string; color: string; label: string; rank: number }
+/** `glyph` marks the row; `long` is the state the meta line spells out when the group title does not already say it. */
+type Tone = { glyph: string; color: string; long: string; rank: number }
 
 // rank: 0 needs input, 1 running, 2 idle or in between, 3 finished.
 const tone = (row: FleetRow): Tone => {
   if (row.kind === 'background') {
     switch (row.state) {
       case 'blocked':
-        return { glyph: '◆', color: 'magenta', label: 'needs input', rank: 0 }
+        return { glyph: '!', color: 'error', long: 'needs input', rank: 0 }
       case 'working':
-        return { glyph: '●', color: 'yellow', label: 'working', rank: 1 }
+        return { glyph: '+', color: 'claude', long: 'working', rank: 1 }
       case 'starting':
       case 'resuming':
       case 'adopted':
       case 'running':
-        return { glyph: '◌', color: 'yellow', label: row.state, rank: 1 }
+        return { glyph: '+', color: 'claude', long: row.state, rank: 1 }
       case 'crashed':
-        return {
-          glyph: '✗',
-          color: 'red',
-          label: 'crashed · restarting',
-          rank: 2,
-        }
+        return { glyph: '✗', color: 'error', long: 'crashed · restarting', rank: 2 }
       case 'done':
-        return { glyph: '✓', color: 'green', label: 'done', rank: 3 }
+        return { glyph: '✓', color: 'success', long: 'done', rank: 3 }
       case 'failed':
-        return { glyph: '✗', color: 'red', label: 'failed', rank: 3 }
+        return { glyph: '✗', color: 'error', long: 'failed', rank: 3 }
       case 'stopped':
-        return { glyph: '■', color: 'gray', label: 'stopped', rank: 3 }
+        return { glyph: '■', color: 'inactive', long: 'stopped', rank: 3 }
       default:
-        return {
-          glyph: '○',
-          color: 'gray',
-          label: row.status ?? row.state ?? 'idle',
-          rank: 2,
-        }
+        return { glyph: '·', color: 'inactive', long: row.status ?? row.state ?? 'idle', rank: 2 }
     }
   }
   switch (row.status) {
     case 'waiting':
-      return { glyph: '◆', color: 'magenta', label: 'needs input', rank: 0 }
+      return { glyph: '!', color: 'error', long: 'needs input', rank: 0 }
     case 'busy':
-      return { glyph: '●', color: 'yellow', label: 'busy', rank: 1 }
+      return { glyph: '+', color: 'claude', long: 'busy', rank: 1 }
     case 'shell':
-      return {
-        glyph: '●',
-        color: 'yellow',
-        label: 'running a command',
-        rank: 1,
-      }
+      return { glyph: '+', color: 'claude', long: 'running a command', rank: 1 }
     default:
-      return {
-        glyph: '○',
-        color: 'gray',
-        label: row.status ?? 'idle',
-        rank: 2,
-      }
+      return { glyph: '·', color: 'inactive', long: row.status ?? 'idle', rank: 2 }
   }
 }
 
@@ -475,6 +458,30 @@ const elapsed = (startedAt: number, now: number): string => {
   if (m < 60) return `${m}m`
   const h = Math.floor(m / 60)
   return h < 24 ? `${h}h${String(m % 60).padStart(2, '0')}` : `${Math.floor(h / 24)}d`
+}
+
+// The context bar matches token-usage's: the same thresholds, glyphs, and on the desktop the same rounded SVG track.
+const level = (pct: number) => (pct >= 90 ? 'error' : pct >= 75 ? 'warning' : 'success')
+
+/** Terminal: a thin line track filled to `pct`, as token-usage's `━─`. */
+const bar = (pct: number, cells: number): { fill: string; rest: string } => {
+  const full = Math.min(cells, Math.round((pct / 100) * cells))
+  return { fill: '━'.repeat(full), rest: '─'.repeat(cells - full) }
+}
+
+const TRACK = '#334155'
+const PX_PER_CELL = 7.9 // monospace advance at 13px, as token-usage's CW
+
+/** Desktop: token-usage's rounded track (5px high, slate track, green → amber → red fill). */
+const barSvg = (pct: number, cells: number): { svg: string; w: number } => {
+  const w = Math.round(cells * PX_PER_CELL)
+  const c = pct >= 90 ? '#EF4444' : pct >= 75 ? '#FBBF24' : '#4ADE80'
+  const filled = Math.max(0, Math.min(1, pct / 100)) * w
+  const fill = filled > 0 ? `<rect x="0" y="4.5" width="${Math.max(5, filled)}" height="5" rx="2.5" fill="${c}"/>` : ''
+  return {
+    w,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="14" viewBox="0 0 ${w} 14"><style>:root{color-scheme:light dark;background:transparent}</style><rect x="0" y="4.5" width="${w}" height="5" rx="2.5" fill="${TRACK}"/>${fill}</svg>`,
+  }
 }
 
 const dir = (cwd: string): string => cwd.split('/').filter(Boolean).at(-1) ?? cwd
@@ -531,21 +538,31 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     // First draw: size the dock to a fifth of the terminal (an unasked open has no width to ask with).
     if (!isSized && e.props.placement === 'dock') void openSized($, e.viewport?.columns)
-    const { Box, Button, Markdown, Text } = $.ui.resolve(e)
+    const els = $.ui.resolve(e)
+    const { Box, Button, Markdown, Text } = els
+    // The terminal's table carries an Svg it never draws, so ask the surface, not the table.
+    const Svg = e.surface !== 'terminal' && 'Svg' in els ? els.Svg : undefined
     const view = await read($, fleet)
     const isAll = await read($, allRepos)
     const now = Date.now()
     const width = Math.max(10, e.props.bodyColumns)
     const sorted = [...view.rows].sort((a, b) => tone(a).rank - tone(b).rank || b.startedAt - a.startedAt)
-    const blocked = sorted.filter(r => tone(r).rank === 0).length
-    const active = sorted.filter(r => tone(r).rank === 1).length
+    const count = (rank: number) => sorted.filter(r => tone(r).rank === rank).length
+    // The footer, as Dom's: one colored count per state that has any.
+    const tally = [
+      { n: count(1), glyph: '+', color: 'claude', label: 'running' },
+      { n: count(3), glyph: '✓', color: 'success', label: 'done' },
+      { n: count(2), glyph: '·', color: 'inactive', label: 'idle' },
+      { n: count(0), glyph: '!', color: 'error', label: 'needs you' },
+    ].filter(c => c.n > 0)
     const summary =
       `${sorted.length} sessions` +
-      (active > 0 ? ` · ${active} active` : '') +
-      (blocked > 0 ? ` · ${blocked} need input` : '')
+      (count(1) > 0 ? ` · ${count(1)} active` : '') +
+      (count(0) > 0 ? ` · ${count(0)} need input` : '')
     const empty =
       view.error ?? (view.refreshedAt === 0 ? 'Loading…' : isAll ? 'No sessions.' : 'No sessions in this repo.')
     const scopeLabel = isAll ? '[all]' : '[repo]'
+    const nameCells = Math.max(4, width - LABEL_CELLS - 2)
     const groups = ['needs input', 'running', 'idle', 'finished'] as const
 
     let group: string | undefined
@@ -562,18 +579,19 @@ export const register: Register = on => {
         {sorted.length === 0 && <Text dimColor>{empty}</Text>}
         {sorted.map(row => {
           const t = tone(row)
-          const title = groups[t.rank] ?? 'idle'
-          const isNewGroup = title !== group
-          group = title
           const note = t.rank === 0 ? row.needs : t.rank === 1 ? row.detail : undefined
           const line = (text: string) => fit(text, width)
-          const meta = `   ${t.label} · ${isAll && row.branch ? `${repoName(row.cwd)} · ` : ''}${row.branch ?? dir(row.cwd)} · ${elapsed(row.startedAt, now)}${row.kind === 'background' ? ' · bg' : ''}${row.where ? ` · ${row.where}` : ''}${row.isSelf ? ' · you' : ''}`
           const pct =
             row.context && row.context.window > 0
               ? Math.max(0, Math.min(100, Math.round((row.context.tokens / row.context.window) * 100)))
               : undefined
           const model = row.context?.model ? shortModel(row.context.model) : undefined
-          const filled = pct === undefined ? 0 : Math.round((pct / 100) * BAR_CELLS)
+          const title = groups[t.rank] ?? 'idle'
+          const meta = `   ${t.long === title ? '' : `${t.long} · `}${isAll && row.branch ? `${repoName(row.cwd)} · ` : ''}${row.branch ?? dir(row.cwd)} · ${elapsed(row.startedAt, now)}${row.kind === 'background' ? ' · bg' : ''}${row.where ? ` · ${row.where}` : ''}${row.isSelf ? ' · you' : ''}`
+          const trackCells = Math.max(6, Math.min(BAR_CELLS, width - 3 - (model ? cells(model) + 1 : 0)))
+          const track = pct === undefined ? undefined : Svg ? barSvg(pct, trackCells) : bar(pct, trackCells)
+          const isNewGroup = title !== group
+          group = title
           const self = row.isSelf
           return (
             <Box
@@ -591,27 +609,27 @@ export const register: Register = on => {
               <Box flexDirection="column" {...(self ? { backgroundColor: 'userMessageBackground' } : {})}>
                 <Box flexDirection="row" justifyContent="space-between">
                   <Box flexDirection="row">
-                    <Text color={t.color}> {t.glyph} </Text>
+                    <Text color={t.color}>{pad(t.glyph, LABEL_CELLS)}</Text>
                     <Button
                       key={`row:${row.key}`}
                       plain
-                      label={fit(row.name, Math.max(4, width - 6))}
+                      label={fit(row.name, nameCells)}
                       {...(self ? { autoFocus: true as const } : {})}
                       onPress={press => void activate($, row, press.surface)}
                     />
                   </Box>
                   {/* ✗ at the row's right edge: a press asks first; this session has none. */}
                   {row.isSelf ? null : busyKey === row.key ? (
-                    <Text color="yellow">… </Text>
+                    <Text color="warning">… </Text>
                   ) : pendingKey === row.key ? (
-                    <Text color="red">? </Text>
+                    <Text color="error">? </Text>
                   ) : (
                     <Button key={`rm:${row.key}`} plain dimColor label="✗ " onPress={() => setPending($, row.key)} />
                   )}
                 </Box>
                 {pendingKey === row.key ? (
                   <Box flexDirection="row" gap={1}>
-                    <Text color="red" wrap="truncate-end">
+                    <Text color="error" wrap="truncate-end">
                       {`   ${row.kind === 'background' ? 'remove' : 'close'}${isWorktree(row.cwd) ? ' + worktree' : ''}?`}
                     </Text>
                     <Button key={`yes:${row.key}`} variant="primary" label="Yes" onPress={() => void remove($, row)} />
@@ -622,14 +640,22 @@ export const register: Register = on => {
                     {line(busyKey === row.key ? `${meta} · removing…` : meta)}
                   </Text>
                 )}
-                {pct !== undefined ? (
+                {/* Context use, drawn like token-usage's 5h / 7d bars. */}
+                {pct === undefined || !track ? null : 'svg' in track ? (
+                  Svg ? (
+                    <Box flexDirection="row" alignItems="center">
+                      <Text dimColor>{`   ${model ? `${model} ` : ''}`}</Text>
+                      <Svg source={track.svg} alt={`context ${pct}%`} width={track.w} height={14} />
+                    </Box>
+                  ) : null
+                ) : (
                   <Text wrap="truncate-end">
                     {'   '}
                     <Text dimColor>{model ? `${model} ` : ''}</Text>
-                    <Text color={pct >= 80 ? 'red' : pct >= 50 ? 'yellow' : 'green'}>{'█'.repeat(filled)}</Text>
-                    <Text dimColor>{'░'.repeat(BAR_CELLS - filled)}</Text>
+                    <Text color={level(pct)}>{track.fill}</Text>
+                    <Text dimColor>{track.rest}</Text>
                   </Text>
-                ) : null}
+                )}
                 {row.links.length > 0 ? (
                   <Box flexDirection="row">
                     <Text>{'   '}</Text>
@@ -643,7 +669,7 @@ export const register: Register = on => {
                   </Box>
                 ) : null}
                 {note ? (
-                  <Text color={t.rank === 0 ? 'magenta' : undefined} dimColor={t.rank !== 0} wrap="truncate-end">
+                  <Text color={t.rank === 0 ? 'error' : undefined} dimColor={t.rank !== 0} wrap="truncate-end">
                     {line(`   ${oneLine(note, 400)}`)}
                   </Text>
                 ) : null}
@@ -651,6 +677,18 @@ export const register: Register = on => {
             </Box>
           )
         })}
+        {tally.length > 0 ? (
+          <Box marginTop={1}>
+            <Text wrap="truncate-end">
+              {tally.map((c, i) => (
+                <Text key={c.label}>
+                  {i > 0 ? <Text dimColor>{' · '}</Text> : null}
+                  <Text color={c.color}>{`${c.glyph} ${c.n} ${c.label}`}</Text>
+                </Text>
+              ))}
+            </Text>
+          </Box>
+        ) : null}
       </Box>
     )
   })
