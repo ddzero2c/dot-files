@@ -460,22 +460,32 @@ const elapsed = (startedAt: number, now: number): string => {
   return h < 24 ? `${h}h${String(m % 60).padStart(2, '0')}` : `${Math.floor(h / 24)}d`
 }
 
-// The context bar matches token-usage's: the same thresholds, glyphs, and on the desktop the same rounded SVG track.
-const level = (pct: number) => (pct >= 90 ? 'error' : pct >= 75 ? 'warning' : 'success')
-
-/** Terminal: a thin line track filled to `pct`, as token-usage's `━─`. */
-const bar = (pct: number, cells: number): { fill: string; rest: string } => {
-  const full = Math.min(cells, Math.round((pct / 100) * cells))
-  return { fill: '━'.repeat(full), rest: '─'.repeat(cells - full) }
-}
+// The context bar matches token-usage's: the same thresholds and colors; on the terminal the same
+// Raster track filled to 1/8 of a cell, on the desktop the same rounded SVG track.
+const levelHex = (pct: number) => (pct >= 90 ? '#EF4444' : pct >= 75 ? '#FBBF24' : '#4ADE80')
 
 const TRACK = '#334155'
+const EIGHTHS = ' ▏▎▍▌▋▊▉█'
+const rgb = (hex: string) => parseInt(hex.slice(1), 16)
+const TRACK_RGB = rgb(TRACK)
+
+/** Terminal: token-usage's Raster track, a partial block's foreground over the track for 1/8-cell steps. */
+const barRaster = (pct: number, cells: number): { cells: string; columns: number } => {
+  const fill = Math.round(Math.max(0, Math.min(1, pct / 100)) * cells * 8)
+  const fg = rgb(levelHex(pct))
+  const words = new Uint32Array(cells * 3)
+  for (let i = 0; i < cells; i++) {
+    words.set([EIGHTHS.codePointAt(Math.max(0, Math.min(8, fill - i * 8)))!, fg, TRACK_RGB], i * 3)
+  }
+  return { cells: new Uint8Array(words.buffer).toBase64(), columns: cells }
+}
+
 const PX_PER_CELL = 7.9 // monospace advance at 13px, as token-usage's CW
 
 /** Desktop: token-usage's rounded track (5px high, slate track, green → amber → red fill). */
 const barSvg = (pct: number, cells: number): { svg: string; w: number } => {
   const w = Math.round(cells * PX_PER_CELL)
-  const c = pct >= 90 ? '#EF4444' : pct >= 75 ? '#FBBF24' : '#4ADE80'
+  const c = levelHex(pct)
   const filled = Math.max(0, Math.min(1, pct / 100)) * w
   const fill = filled > 0 ? `<rect x="0" y="4.5" width="${Math.max(5, filled)}" height="5" rx="2.5" fill="${c}"/>` : ''
   return {
@@ -542,6 +552,7 @@ export const register: Register = on => {
     const { Box, Button, Markdown, Text } = els
     // The terminal's table carries an Svg it never draws, so ask the surface, not the table.
     const Svg = e.surface !== 'terminal' && 'Svg' in els ? els.Svg : undefined
+    const Raster = 'Raster' in els ? els.Raster : undefined
     const view = await read($, fleet)
     const isAll = await read($, allRepos)
     const now = Date.now()
@@ -589,7 +600,15 @@ export const register: Register = on => {
           const title = groups[t.rank] ?? 'idle'
           const meta = `   ${t.long === title ? '' : `${t.long} · `}${isAll && row.branch ? `${repoName(row.cwd)} · ` : ''}${row.branch ?? dir(row.cwd)} · ${elapsed(row.startedAt, now)}${row.kind === 'background' ? ' · bg' : ''}${row.where ? ` · ${row.where}` : ''}${row.isSelf ? ' · you' : ''}`
           const trackCells = Math.max(6, Math.min(BAR_CELLS, width - 3 - (model ? cells(model) + 1 : 0)))
-          const track = pct === undefined ? undefined : Svg ? barSvg(pct, trackCells) : bar(pct, trackCells)
+          // the surface's own picture leaf, chosen once; none on a surface that has neither
+          let track = null
+          if (pct !== undefined && Svg) {
+            const b = barSvg(pct, trackCells)
+            track = <Svg source={b.svg} alt={`context ${pct}%`} width={b.w} height={14} />
+          } else if (pct !== undefined && Raster) {
+            const b = barRaster(pct, trackCells)
+            track = <Raster key={`ctx:${row.key}`} columns={b.columns} rows={1} cells={b.cells} />
+          }
           const isNewGroup = title !== group
           group = title
           const self = row.isSelf
@@ -641,20 +660,11 @@ export const register: Register = on => {
                   </Text>
                 )}
                 {/* Context use, drawn like token-usage's 5h / 7d bars. */}
-                {pct === undefined || !track ? null : 'svg' in track ? (
-                  Svg ? (
-                    <Box flexDirection="row" alignItems="center">
-                      <Text dimColor>{`   ${model ? `${model} ` : ''}`}</Text>
-                      <Svg source={track.svg} alt={`context ${pct}%`} width={track.w} height={14} />
-                    </Box>
-                  ) : null
-                ) : (
-                  <Text wrap="truncate-end">
-                    {'   '}
-                    <Text dimColor>{model ? `${model} ` : ''}</Text>
-                    <Text color={level(pct)}>{track.fill}</Text>
-                    <Text dimColor>{track.rest}</Text>
-                  </Text>
+                {track && (
+                  <Box flexDirection="row" alignItems="center">
+                    <Text dimColor>{`   ${model ? `${model} ` : ''}`}</Text>
+                    {track}
+                  </Box>
                 )}
                 {row.links.length > 0 ? (
                   <Box flexDirection="row">

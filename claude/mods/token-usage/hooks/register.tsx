@@ -177,7 +177,6 @@ const toSvg = (pills: Pill[], pulse: boolean) => {
 // ---- terminal: one Raster row of the same pills, in characters ----
 
 const DEF = 0x01000000 // the terminal's own color
-const BAR_CELLS = 10
 const rgb = (hex: string) => parseInt(hex.slice(1), 16)
 // a pill's fill: the desktop's tint at 14% over the card
 const tint = (hex: string) => {
@@ -187,23 +186,35 @@ const tint = (hex: string) => {
   return ch(16) | ch(8) | ch(0)
 }
 
-// one part as characters, each run in its color; [] where it has none
-const charPart = (p: Part): [string, string][] => {
+// The bar uses what only a Raster gives: it fills to 1/8 of a cell (a partial block's foreground over
+// its background), and each cell's background is free to say something of its own: how much of the
+// window has gone by. So usage is the fill, time is the track's shade, and no glyph marks either.
+const BAR_CELLS = 12
+const SPENT = rgb('#64748B') // the track behind the time already gone
+const AHEAD = rgb(TRACK) // the track behind the time still to come, a step above the pill's fill
+const EIGHTHS = ' ▏▎▍▌▋▊▉█'
+
+// characters in a foreground over a background; no background is the pill's own
+type CharRun = [text: string, fg: number, bg?: number]
+
+// one part as character runs; [] where it has none
+const charPart = (p: Part): CharRun[] => {
   switch (p.kind) {
     case 'icon':
-      return p.glyph ? [[p.glyph, p.color]] : []
+      return p.glyph ? [[p.glyph, rgb(p.color)]] : []
     case 'text':
-      return [[p.text, p.color]]
+      return [[p.text, rgb(p.color)]]
     case 'bar': {
-      const filled = Math.round(Math.max(0, Math.min(1, p.used / 100)) * BAR_CELLS)
-      const mark = p.mark === undefined ? -1 : Math.min(BAR_CELLS - 1, Math.floor(p.mark * BAR_CELLS))
-      return Array.from({ length: BAR_CELLS }, (_, i): [string, string] =>
-        i === mark ? ['┃', FG] : i < filled ? ['━', p.color] : ['─', TRACK])
+      const fill = Math.round(Math.max(0, Math.min(1, p.used / 100)) * BAR_CELLS * 8)
+      const spent = p.mark === undefined ? 0 : Math.round(p.mark * BAR_CELLS)
+      const fg = rgb(p.color)
+      return Array.from({ length: BAR_CELLS }, (_, i): CharRun =>
+        [EIGHTHS[Math.max(0, Math.min(8, fill - i * 8))], fg, i < spent ? SPENT : AHEAD])
     }
     case 'sep':
       return []
     case 'ghost':
-      return [['▬'.repeat(p.n), TRACK]]
+      return [['▬'.repeat(p.n), rgb(TRACK)]]
   }
 }
 
@@ -224,7 +235,7 @@ const rasterPill = (p: Pill): Run => {
   put(r, '▐', bg, DEF)
   for (const runs of charPill(p)) {
     put(r, ' ', DEF, bg)
-    for (const [s, c] of runs) put(r, s, rgb(c), bg)
+    for (const [s, fg, own] of runs) put(r, s, fg, own ?? bg)
   }
   put(r, ' ', DEF, bg)
   put(r, '▌', bg, DEF)

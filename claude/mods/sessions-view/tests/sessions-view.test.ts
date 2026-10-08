@@ -35,6 +35,14 @@ const AGENTS_JSON = JSON.stringify([
   },
 ])
 
+// a Raster's glyphs as a string, colors dropped
+const glyphs = (cells: string) => {
+  const w = new Uint32Array(Uint8Array.fromBase64(cells).buffer)
+  let s = ''
+  for (let i = 0; i < w.length; i += 3) s += String.fromCodePoint(w[i])
+  return s
+}
+
 type Body = Extract<Parameters<typeof test>[1], (...args: never[]) => unknown>
 
 const wire = (on: Parameters<Body>[1], calls: string[][], agentsJson = AGENTS_JSON, withCopy = true) => {
@@ -111,10 +119,11 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   expect(await ui.find({ type: 'Text', text: /needs input · / })).toBeUndefined()
   // (a 200k model: haiku 4.5. The Claude 5 family counts against 1M, see windowFor.)
   // this session (the job) is from the engine (150k of 1M = 15 cells); the other row from its transcript (60k of 200k = 6)
-  expect(await ui.find({ type: 'Text', text: /^fable 1m $/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^━{15}$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^haiku 4\.5 $/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^━{6}$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^   fable 1m $/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^   haiku 4\.5 $/ })).toBeDefined()
+  // the terminal draws token-usage's Raster track: full blocks, then empty track
+  const bars = (await ui.findAll({ type: 'Raster' })).map(r => glyphs(r.props.cells as string))
+  expect(bars.map(b => b.replace(/ +$/, ''))).toEqual(['█'.repeat(15), '█'.repeat(6)])
   expect(await ui.find({ type: 'Text', text: /\d+%/ })).toBeUndefined()
   expect(await ui.find({ type: 'Button', text: /feature-x-38/ })).toBeDefined()
   // the group title names the state, so a row keeps only its glyph; the footer still tallies
@@ -128,7 +137,7 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   // the desktop draws the same bars as token-usage, an SVG track per row
   const desk = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(await desk.findAll({ type: 'Svg' })).toHaveLength(2)
-  expect(await desk.find({ type: 'Text', text: /^━+$/ })).toBeUndefined()
+  expect(await desk.findAll({ type: 'Raster' })).toHaveLength(0)
   await desk.unmount()
 })
 
