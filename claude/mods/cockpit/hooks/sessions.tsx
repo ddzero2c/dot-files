@@ -344,65 +344,6 @@ const activate = async ($: Engine, row: FleetRow, surface: RenderSurface) => {
   })
 }
 
-const isWorktree = (cwd: string): boolean => cwd.includes('/.claude/worktrees/')
-
-const firstLine = (text: string): string => text.trim().split('\n')[0] ?? ''
-
-/** The row whose ✗ was pressed and awaits a Yes; the one being removed. Module state: a reload clears it. */
-let pendingKey: string | undefined
-let busyKey: string | undefined
-
-const setPending = ($: Engine, key: string | undefined) => {
-  pendingKey = key
-  $.ui.invalidate('ui.render')
-}
-
-/**
- * Removes a session after its Yes. A background job goes through `claude rm`,
- * which deletes the job and its worktree when that is safe. An interactive
- * session's process is asked to exit, then its worktree (when it runs in one)
- * is removed; git refuses a dirty one and the refusal is shown.
- */
-const remove = async ($: Engine, row: FleetRow) => {
-  pendingKey = undefined
-  busyKey = row.key
-  $.ui.invalidate('ui.render')
-  const fail = (text: string) => $.ui.toast(`remove ${row.name} failed: ${text}`, { timeoutMs: 8000 })
-  try {
-    if (row.kind === 'background') {
-      const r = await $.process.run(['claude', 'rm', row.key], {
-        timeoutMs: 120_000,
-      })
-      if (r.exitCode === 0) $.ui.toast(`removed ${row.name}${isWorktree(row.cwd) ? ' + worktree' : ''}`)
-      else fail(firstLine(r.stderr || r.stdout) || `claude rm exited ${r.exitCode}`)
-    } else {
-      if (row.pid !== undefined) {
-        const k = await $.process.run(['kill', '-TERM', String(row.pid)], {
-          timeoutMs: 5000,
-        })
-        if (k.exitCode !== 0) {
-          fail(firstLine(k.stderr) || `kill exited ${k.exitCode}`)
-          return
-        }
-      }
-      if (isWorktree(row.cwd)) {
-        const w = await $.process.run(['git', '-C', row.cwd, 'worktree', 'remove', row.cwd], { timeoutMs: 30_000 })
-        if (w.exitCode === 0) $.ui.toast(`closed ${row.name} + removed worktree`)
-        else fail(`session closed, worktree kept: ${firstLine(w.stderr) || `git exited ${w.exitCode}`}`)
-      } else {
-        $.ui.toast(`closed ${row.name}`)
-      }
-    }
-  } catch (err) {
-    fail(err instanceof Error ? err.message : String(err))
-  } finally {
-    busyKey = undefined
-    branches.delete(row.cwd)
-    await refresh($)
-    $.ui.invalidate('ui.render')
-  }
-}
-
 const openLink = async ($: Engine, href: string) => {
   const r = await $.process.run(['open', href], { timeoutMs: 5000 }).catch(() => undefined)
   $.ui.toast(r?.exitCode === 0 ? `opened ${href}` : href)
@@ -545,31 +486,24 @@ export const registerSessions: Register = on => {
     const width = Math.max(10, e.props.bodyColumns)
     const sorted = [...view.rows].sort((a, b) => tone(a).rank - tone(b).rank || b.startedAt - a.startedAt)
     const count = (rank: number) => sorted.filter(r => tone(r).rank === rank).length
-    // The footer, as Dom's: one colored count per state that has any.
+    // The footer, as Dom's: one colored count per state that has any; the only tally in the pane.
     const tally = [
-      { n: count(1), glyph: '+', color: 'claude', label: 'running' },
-      { n: count(3), glyph: '✓', color: 'success', label: 'done' },
-      { n: count(2), glyph: '·', color: 'inactive', label: 'idle' },
       { n: count(0), glyph: '!', color: 'error', label: 'needs you' },
+      { n: count(1), glyph: '+', color: 'claude', label: 'running' },
+      { n: count(2), glyph: '·', color: 'inactive', label: 'idle' },
+      { n: count(3), glyph: '✓', color: 'success', label: 'done' },
     ].filter(c => c.n > 0)
-    const summary =
-      `${sorted.length} sessions` +
-      (count(1) > 0 ? ` · ${count(1)} active` : '') +
-      (count(0) > 0 ? ` · ${count(0)} need input` : '')
     const empty =
       view.error ?? (view.refreshedAt === 0 ? 'Loading…' : isAll ? 'No sessions.' : 'No sessions in this repo.')
     const scopeLabel = isAll ? '[all]' : '[repo]'
-    const nameCells = Math.max(4, width - LABEL_CELLS - 2)
+    const nameCells = Math.max(4, width - LABEL_CELLS)
     const groups = ['needs input', 'running', 'idle', 'finished'] as const
 
     let group: string | undefined
     return (
       <Box flexDirection="column">
         <Box flexDirection="row" justifyContent="space-between">
-          <Text bold>
-            {fit('Sessions ', width)}
-            <Text dimColor>{fit(summary, Math.max(0, width - 9 - scopeLabel.length - 1))}</Text>
-          </Text>
+          <Text bold>{fit(TITLE, Math.max(0, width - scopeLabel.length - 1))}</Text>
           {/* Scope toggle: this repo's sessions, or every session on the machine. */}
           <Button key="scope" plain dimColor label={scopeLabel} onPress={() => void toggleScope($)} />
         </Box>
@@ -612,39 +546,19 @@ export const registerSessions: Register = on => {
               {/* The row's name is a Button: the pane's focus ring walks these (↑/↓ per keybindings), Enter or a click acts. */}
               {/* This session's block sits on the theme's own-message background; text keeps its colors. */}
               <Box flexDirection="column" {...(self ? { backgroundColor: 'userMessageBackground' } : {})}>
-                <Box flexDirection="row" justifyContent="space-between">
-                  <Box flexDirection="row">
-                    <Text color={t.color}>{pad(t.glyph, LABEL_CELLS)}</Text>
-                    <Button
-                      key={`row:${row.key}`}
-                      plain
-                      label={fit(row.name, nameCells)}
-                      {...(self ? { autoFocus: true as const } : {})}
-                      onPress={press => void activate($, row, press.surface)}
-                    />
-                  </Box>
-                  {/* ✗ at the row's right edge: a press asks first; this session has none. */}
-                  {row.isSelf ? null : busyKey === row.key ? (
-                    <Text color="warning">… </Text>
-                  ) : pendingKey === row.key ? (
-                    <Text color="error">? </Text>
-                  ) : (
-                    <Button key={`rm:${row.key}`} plain dimColor label="✗ " onPress={() => setPending($, row.key)} />
-                  )}
+                <Box flexDirection="row">
+                  <Text color={t.color}>{pad(t.glyph, LABEL_CELLS)}</Text>
+                  <Button
+                    key={`row:${row.key}`}
+                    plain
+                    label={fit(row.name, nameCells)}
+                    {...(self ? { autoFocus: true as const } : {})}
+                    onPress={press => void activate($, row, press.surface)}
+                  />
                 </Box>
-                {pendingKey === row.key ? (
-                  <Box flexDirection="row" gap={1}>
-                    <Text color="error" wrap="truncate-end">
-                      {`   ${row.kind === 'background' ? 'remove' : 'close'}${isWorktree(row.cwd) ? ' + worktree' : ''}?`}
-                    </Text>
-                    <Button key={`yes:${row.key}`} variant="primary" label="Yes" onPress={() => void remove($, row)} />
-                    <Button key={`no:${row.key}`} label="Cancel" onPress={() => setPending($, undefined)} />
-                  </Box>
-                ) : (
-                  <Text dimColor wrap="truncate-end">
-                    {line(busyKey === row.key ? `${meta} · removing…` : meta)}
-                  </Text>
-                )}
+                <Text dimColor wrap="truncate-end">
+                  {line(meta)}
+                </Text>
                 {/* Context use, the same bar as the usage band's 5h / 7d. */}
                 {track && (
                   <Box flexDirection="row" alignItems="center">
@@ -676,9 +590,10 @@ export const registerSessions: Register = on => {
         {tally.length > 0 ? (
           <Box marginTop={1}>
             <Text wrap="truncate-end">
+              {/* Two spaces between counts: idle's own glyph is a `·`, so a `·` separator would double it. */}
               {tally.map((c, i) => (
                 <Text key={c.label}>
-                  {i > 0 ? <Text dimColor>{' · '}</Text> : null}
+                  {i > 0 ? '  ' : null}
                   <Text color={c.color}>{`${c.glyph} ${c.n} ${c.label}`}</Text>
                 </Text>
               ))}
