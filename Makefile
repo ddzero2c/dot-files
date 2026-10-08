@@ -13,7 +13,7 @@ DOTFILES    := bashrc bash_profile bash_aliases bash_ps1 skhdrc gitconfig tmux.c
 CONFIGFILES := nvim ghostty
 CLAUDEFILES := settings.json commands skills hooks output-styles
 
-BREW_PKGS := bash-completion tig asdf gh tmux kubectl fd ag rg fzf terminal-notifier
+BREW_PKGS := bash-completion tig asdf gh tmux kubectl fd ag rg fzf
 
 TPM_DIR := $(HOME)/.tmux/plugins/tpm
 

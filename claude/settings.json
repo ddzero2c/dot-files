@@ -11,31 +11,20 @@
     "command": "bash ~/bin/claude-statusline"
   },
   "enabledPlugins": {
-    "superpowers@claude-plugins-official": false,
-    "claude-md-management@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
     "pr-review-toolkit@claude-plugins-official": true,
-    "claude-security@claude-plugins-official": true,
-    "code-modernization@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
     "swift-lsp@claude-plugins-official": true,
-    "claude-tmux-notifier@ddzero2c": true,
     "gopls-lsp@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true,
-    "ios-simulator-skill@conorluddy": true
+    "typesafe@typesafe-ai": true,
+    "cc-plugin-you-should-know@builtin": true
   },
   "extraKnownMarketplaces": {
-    "ddzero2c": {
+    "typesafe-ai": {
       "source": {
         "source": "github",
-        "repo": "ddzero2c/claude-tmux-notifier"
-      }
-    },
-    "conorluddy": {
-      "source": {
-        "source": "github",
-        "repo": "conorluddy/ios-simulator-skill"
+        "repo": "typesafe-ai/skills"
       }
     }
   },
