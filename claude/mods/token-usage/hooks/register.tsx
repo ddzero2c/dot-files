@@ -48,10 +48,10 @@ const TRACK = '#334155'
 
 const level = (p: number, fg: string) => (p >= 90 ? '#EF4444' : p >= 75 ? '#FBBF24' : fg)
 
-// <title> is the native hover tooltip (works because the Svg is drawn isInteractive)
+// <title> only shows as a tooltip when the Svg is isInteractive, which made the strip flicker, so it's left as alt text
 const pill = (x: number, w: number, bg: string, body: string, tip: string) =>
-  `<g class="p"><title>${tip}</title><rect x="${x}" y="0" width="${w}" height="28" rx="14" fill="${CARD}"/>` +
-  `<rect class="h" x="${x + 0.5}" y=".5" width="${w - 1}" height="27" rx="13.5" fill="${bg}" fill-opacity=".14" stroke="${bg}" stroke-opacity=".38"/>${body}</g>`
+  `<g><title>${tip}</title><rect x="${x}" y="0" width="${w}" height="28" rx="14" fill="${CARD}"/>` +
+  `<rect x="${x + 0.5}" y=".5" width="${w - 1}" height="27" rx="13.5" fill="${bg}" fill-opacity=".14" stroke="${bg}" stroke-opacity=".38"/>${body}</g>`
 
 const longLeft = (iso: string | undefined, now: number) => {
   if (!iso) return '重置時間未知'
@@ -117,7 +117,21 @@ const strip = (v: Snap, now: number) => {
   add(chip(x, 'layers', k(v.tokCache), '#6366F1', '#818CF8', `快取讀取 token：從提示快取重複使用 ${k(v.tokCache)}，計費較一般輸入低`), 18)
   if (v.usd !== null) add(chip(x, 'coin', `$${v.usd.toFixed(2)}`, '#F59E0B', '#FBBF24', `工作階段費用：依 API 牌價估算約 $${v.usd.toFixed(2)} 美元`))
   const w = Math.ceil(x - 8)
-  return { w, svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="28" viewBox="0 0 ${w} 28"><style>:root{color-scheme:light dark;background:transparent}.p{cursor:help}.p .h{transition:fill-opacity .12s}.p:hover .h{fill-opacity:.26}</style>${parts.join('')}</svg>` }
+  return { w, svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="28" viewBox="0 0 ${w} 28"><style>:root{color-scheme:light dark;background:transparent}</style>${parts.join('')}</svg>` }
+}
+
+// placeholder strip in the same pill shapes until the first response brings numbers
+const skeleton = () => {
+  const slots: [number, number][] = [[252, 8], [252, 18], [74, 8], [74, 8], [74, 18], [70, 0]]
+  let x = 0
+  let parts = ''
+  for (const [w, gap] of slots) {
+    parts += `<rect x="${x}" y="0" width="${w}" height="28" rx="14" fill="${CARD}"/>` +
+      `<circle cx="${x + 19}" cy="14" r="6" fill="${TRACK}"/>` +
+      `<rect x="${x + 33}" y="10" width="${w - 44}" height="8" rx="4" fill="${TRACK}"/>`
+    x += w + gap
+  }
+  return { w: x, svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${x}" height="28" viewBox="0 0 ${x} 28"><style>:root{color-scheme:light dark;background:transparent}@keyframes p{50%{opacity:.45}}g{animation:p 1.4s ease-in-out infinite}</style><g>${parts}</g></svg>` }
 }
 
 // ---- terminal fallback: text chips ----
@@ -173,13 +187,18 @@ export const register: Register = on => {
     const { Box, Text } = t
 
     if (!v.five && !v.seven && v.usd === null && v.tokIn + v.tokOut === 0) {
+      if ('Svg' in t) {
+        const { Svg } = t
+        const { w, svg } = skeleton()
+        return <Box><Svg source={svg} alt="token-usage：等待第一次回應後顯示額度" width={w} height={28} /></Box>
+      }
       return <Box><Text dimColor>token-usage：等待第一次回應後顯示額度…</Text></Box>
     }
 
     if ('Svg' in t) {
       const { Svg } = t
       const { w, svg } = strip(v, now)
-      return <Box><Svg source={svg} alt="5h / 7d 額度、token 與花費" width={w} height={28} isInteractive /></Box>
+      return <Box><Svg source={svg} alt="5h / 7d 額度、token 與花費" width={w} height={28} /></Box>
     }
 
     const line = [
