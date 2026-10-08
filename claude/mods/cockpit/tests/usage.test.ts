@@ -84,3 +84,20 @@ test('terminal shows a low use as a sliver, not an empty bar', async ($, on) => 
   // 3% of 96 eighths rounds to 3: a three-eighths block in the first cell
   expect(glyphs((await ui.find({ type: 'Raster', key: 'usage' }))!.props.cells)).toContain('7d ▍            3%')
 })
+
+test('the terminal skeleton has the band\'s own layout, empty tracks for every text', async ($, on) => {
+  on('clock.now', () => ({ value: NOW }))
+  on('session.measure', (_$, e) => ({ changed: e.changed }))
+  const ui = await $.ui.mount({ ...band(200), surface: 'terminal' })
+  const skeleton = (await ui.find({ type: 'Raster', key: 'usage' }))!.props.cells as string
+  expect(glyphs(skeleton)).not.toMatch(/[0-9a-z%$]/)
+
+  const at = new Date(NOW).toISOString()
+  await $.session.measure({
+    ...MEASURE,
+    rateLimits: [{ kind: 'five_hour', percentUsed: 0, resetsAt: at }, { kind: 'seven_day', percentUsed: 0, resetsAt: at }],
+    cost: { usd: 0 },
+  })
+  const real = (await ui.find({ type: 'Raster', key: 'usage' }))!.props.cells as string
+  expect(decode(skeleton).length).toBe(decode(real).length)
+})

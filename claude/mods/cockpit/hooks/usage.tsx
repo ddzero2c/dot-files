@@ -36,7 +36,7 @@ type Part =
   // `mark`: how much of the window has gone by, 0..1
   | { kind: 'bar'; used: number; mark?: number; color: string }
   | { kind: 'sep' }
-  // a skeleton's stand-in for text `n` characters long
+  // a skeleton's stand-in for text `n` characters long: an empty bar track
   | { kind: 'ghost'; n: number }
 
 type Pill = {
@@ -94,15 +94,21 @@ const model = (v: Snap, now: number): Pill[] => {
   return pills
 }
 
-// placeholder pills in the same shapes until the first response brings numbers
-const skeletonModel = (): Pill[] =>
-  ([[29, 'near'], [29, 'far'], [6, 'near'], [6, 'near'], [6, 'far'], [5, 'near']] as const).map(([n, gap], i) => ({
+// Until the first response brings numbers: the band's own pills for a zero reading, every text an
+// empty track of its width and every bar empty, so nothing moves when the numbers land.
+const skeletonModel = (now: number): Pill[] => {
+  const zero: Win = { used: 0, resetsAt: new Date(now).toISOString() }
+  return model({ five: zero, seven: zero, usd: 0, tokIn: 0, tokOut: 0, tokCache: 0 }, now).map(p => ({
+    ...p,
     tone: CARD,
-    parts: [{ kind: 'ghost', n }],
     tip: '',
-    gap,
-    keep: -i,
+    parts: p.parts.map((part): Part =>
+      part.kind === 'text' ? { kind: 'ghost', n: part.text.length }
+      : part.kind === 'icon' ? { ...part, color: TRACK }
+      : part.kind === 'bar' ? { kind: 'bar', used: 0, color: TRACK }
+      : part),
   }))
+}
 
 // ---- desktop: one SVG strip of rounded pills (Svg is the desktop's picture leaf) ----
 
@@ -139,7 +145,7 @@ const svgPart = (p: Part, x: number): [string, number] => {
     case 'sep':
       return [`<rect x="${x}" y="8" width="1" height="12" fill="${MUTED}" opacity=".35"/>`, 1]
     case 'ghost':
-      return [`<circle cx="${x + 8}" cy="14" r="6" fill="${TRACK}"/><rect x="${x + 22}" y="10" width="${p.n * CW}" height="8" rx="4" fill="${TRACK}"/>`, 22 + p.n * CW]
+      return [barRects(x, 11.5, p.n * CW, 0, TRACK), p.n * CW]
   }
 }
 
@@ -195,7 +201,7 @@ const charPart = (p: Part): CharRun[] => {
     case 'sep':
       return []
     case 'ghost':
-      return [['▬'.repeat(p.n), rgb(TRACK)]]
+      return barCells(0, p.n, TRACK)
   }
 }
 
@@ -276,7 +282,7 @@ export const registerUsage: Register = on => {
     const v = await read($, snap)
     const now = await $.clock.now()
     const empty = !v.five && !v.seven && v.usd === null && v.tokIn + v.tokOut === 0
-    const pills = empty ? skeletonModel() : model(v, now)
+    const pills = empty ? skeletonModel(now) : model(v, now)
     const alt = empty ? '等待第一次回應後顯示額度' : '5h / 7d 額度、token 與花費'
 
     // the terminal hands out an Svg too but draws it as an empty box, so branch on the surface
