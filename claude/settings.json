@@ -1,7 +1,7 @@
 {
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5-5",
-    "CLAUDE_CODE_PLUGIN_DIRS": "~/repo/dot-files/claude/mods/sessions-view:~/repo/dot-files/claude/mods/token-usage"
+    "CLAUDE_CODE_PLUGIN_DIRS": "~/repo/dot-files/claude/mods/cockpit"
   },
   "permissions": {
     "defaultMode": "auto"

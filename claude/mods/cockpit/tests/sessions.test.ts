@@ -1,7 +1,9 @@
 import { expect, test } from 'claude-code/testing'
 
+import { glyphs } from './raster'
+
 const PANE = {
-  plugin: 'sessions-view',
+  plugin: 'cockpit',
   component: 'Pane',
   requestId: 'sessions-view',
   props: {
@@ -34,14 +36,6 @@ const AGENTS_JSON = JSON.stringify([
     status: 'busy',
   },
 ])
-
-// a Raster's glyphs as a string, colors dropped
-const glyphs = (cells: string) => {
-  const w = new Uint32Array(Uint8Array.fromBase64(cells).buffer)
-  let s = ''
-  for (let i = 0; i < w.length; i += 3) s += String.fromCodePoint(w[i])
-  return s
-}
 
 type Body = Extract<Parameters<typeof test>[1], (...args: never[]) => unknown>
 
@@ -121,7 +115,7 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   // this session (the job) is from the engine (150k of 1M = 15 cells); the other row from its transcript (60k of 200k = 6)
   expect(await ui.find({ type: 'Text', text: /^   fable 1m $/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^   haiku 4\.5 $/ })).toBeDefined()
-  // the terminal draws token-usage's Raster track: full blocks, then empty track
+  // the terminal draws the shared Raster bar (hooks/bar.ts): full blocks, then empty track
   const bars = (await ui.findAll({ type: 'Raster' })).map(r => glyphs(r.props.cells as string))
   expect(bars.map(b => b.replace(/ +$/, ''))).toEqual(['█'.repeat(15), '█'.repeat(6)])
   expect(await ui.find({ type: 'Text', text: /\d+%/ })).toBeUndefined()
@@ -134,7 +128,7 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   expect(await ui.find({ type: 'Text', text: /^! 1 needs you$/ })).toBeDefined()
   await ui.unmount()
 
-  // the desktop draws the same bars as token-usage, an SVG track per row
+  // the desktop draws the shared SVG bar, one per row
   const desk = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(await desk.findAll({ type: 'Svg' })).toHaveLength(2)
   expect(await desk.findAll({ type: 'Raster' })).toHaveLength(0)

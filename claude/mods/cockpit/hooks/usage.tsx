@@ -2,11 +2,11 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Snap, Win } from '../types'
+import { barCells, barRects, level, pack, rgb, TRACK } from './bar'
 
 const EMPTY: Snap = { five: null, seven: null, usd: null, tokIn: 0, tokOut: 0, tokCache: 0 }
-const snap = atom({ plugin: 'token-usage', key: 'snap' } as const, EMPTY)
+const snap = atom({ plugin: 'cockpit', key: 'snap' } as const, EMPTY)
 
-const tick = atom({ plugin: 'token-usage', key: 'tick' } as const, 0)
 
 const H = 3600_000
 const k = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : `${n}`)
@@ -25,9 +25,7 @@ const left = (iso: string | undefined, now: number) => {
 const CARD = '#1B2336'
 const FG = '#F8FAFC'
 const MUTED = '#94A3B8'
-const TRACK = '#334155'
 
-const level = (p: number, fg: string) => (p >= 90 ? '#EF4444' : p >= 75 ? '#FBBF24' : fg)
 
 type Icon = 'gauge' | 'cal' | 'clock' | 'up' | 'down' | 'layers' | 'coin'
 
@@ -136,13 +134,8 @@ const svgPart = (p: Part, x: number): [string, number] => {
       return [icon(p.icon, x, p.color), 16]
     case 'text':
       return [svgText(x, p.text, p.color, p.bold), p.text.length * (p.bold ? CW + 0.5 : CW)]
-    case 'bar': {
-      const filled = Math.max(0, Math.min(1, p.used / 100)) * BAR_PX
-      let s = `<rect x="${x}" y="11.5" width="${BAR_PX}" height="5" rx="2.5" fill="${TRACK}"/>`
-      if (filled > 0) s += `<rect x="${x}" y="11.5" width="${Math.max(5, filled)}" height="5" rx="2.5" fill="${p.color}"/>`
-      if (p.mark !== undefined) s += `<rect x="${x + p.mark * (BAR_PX - 2)}" y="8.5" width="2" height="11" rx="1" fill="${FG}"/>`
-      return [s, BAR_PX]
-    }
+    case 'bar':
+      return [barRects(x, 11.5, BAR_PX, p.used, p.color, p.mark), BAR_PX]
     case 'sep':
       return [`<rect x="${x}" y="8" width="1" height="12" fill="${MUTED}" opacity=".35"/>`, 1]
     case 'ghost':
@@ -177,7 +170,6 @@ const toSvg = (pills: Pill[], pulse: boolean) => {
 // ---- terminal: one Raster row of the same pills, in characters ----
 
 const DEF = 0x01000000 // the terminal's own color
-const rgb = (hex: string) => parseInt(hex.slice(1), 16)
 // a pill's fill: the desktop's tint at 14% over the card
 const tint = (hex: string) => {
   const a = rgb(CARD)
@@ -186,13 +178,7 @@ const tint = (hex: string) => {
   return ch(16) | ch(8) | ch(0)
 }
 
-// The bar uses what only a Raster gives: it fills to 1/8 of a cell (a partial block's foreground over
-// its background), and each cell's background is free to say something of its own: how much of the
-// window has gone by. So usage is the fill, time is the track's shade, and no glyph marks either.
 const BAR_CELLS = 12
-const SPENT = rgb('#64748B') // the track behind the time already gone
-const AHEAD = rgb(TRACK) // the track behind the time still to come, a step above the pill's fill
-const EIGHTHS = ' ▏▎▍▌▋▊▉█'
 
 // characters in a foreground over a background; no background is the pill's own
 type CharRun = [text: string, fg: number, bg?: number]
@@ -204,13 +190,8 @@ const charPart = (p: Part): CharRun[] => {
       return p.glyph ? [[p.glyph, rgb(p.color)]] : []
     case 'text':
       return [[p.text, rgb(p.color)]]
-    case 'bar': {
-      const fill = Math.round(Math.max(0, Math.min(1, p.used / 100)) * BAR_CELLS * 8)
-      const spent = p.mark === undefined ? 0 : Math.round(p.mark * BAR_CELLS)
-      const fg = rgb(p.color)
-      return Array.from({ length: BAR_CELLS }, (_, i): CharRun =>
-        [EIGHTHS[Math.max(0, Math.min(8, fill - i * 8))], fg, i < spent ? SPENT : AHEAD])
-    }
+    case 'bar':
+      return barCells(p.used, BAR_CELLS, p.color, p.mark)
     case 'sep':
       return []
     case 'ghost':
@@ -258,19 +239,12 @@ const toRaster = (pills: Pill[], cols: number): Run => {
   return row
 }
 
-const pack = (r: Run) => new Uint8Array(Uint32Array.from(r).buffer).toBase64()
-
 // ---- a surface with neither Raster nor Svg: the same characters as one Text ----
 
 const toText = (pills: Pill[]) =>
   pills.map(p => charPill(p).map(runs => runs.map(([s]) => s).join('')).join(' ')).join('  │  ')
 
-export const register: Register = on => {
-  // redraw every 5 min so the reset countdowns and time markers keep moving; no model call
-  on('session.start', async ($, e, next) => {
-    $.clock.every(5 * 60_000, () => update($, tick, n => n + 1))
-    return next(e)
-  })
+export const registerUsage: Register = on => {
 
   on('session.measure', async ($, e, next) => {
     const f = e.rateLimits.find(r => r.kind === 'five_hour')
@@ -299,18 +273,17 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
-    await read($, tick)
     const v = await read($, snap)
     const now = await $.clock.now()
     const empty = !v.five && !v.seven && v.usd === null && v.tokIn + v.tokOut === 0
     const pills = empty ? skeletonModel() : model(v, now)
-    const alt = empty ? 'token-usage：等待第一次回應後顯示額度' : '5h / 7d 額度、token 與花費'
+    const alt = empty ? '等待第一次回應後顯示額度' : '5h / 7d 額度、token 與花費'
 
     // the terminal hands out an Svg too but draws it as an empty box, so branch on the surface
     if (e.surface === 'terminal') {
       const { Box, Raster } = $.ui.resolve(e)
       const row = toRaster(pills, e.props.bodyColumns)
-      return <Box><Raster key="token-usage" columns={len(row)} rows={1} cells={pack(row)} /></Box>
+      return <Box><Raster key="usage" columns={len(row)} rows={1} cells={pack(row)} /></Box>
     }
 
     const t = $.ui.resolve(e)

@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface as Engine, Register, RenderSurface } from 'claude-code'
 
 import type { FleetLink, FleetRow, FleetView } from '../types'
+import { barCells, barRects, level, packCells } from './bar'
 import { cells, fit, pad } from './text'
 
 const PANE = 'sessions-view'
@@ -14,13 +15,13 @@ const BAR_CELLS = 20
 /** Cells for the status glyph and its gap, so names line up with the indented lines below. */
 const LABEL_CELLS = 3
 
-const fleet = atom({ plugin: 'sessions-view', key: 'fleet' } as const, {
+const fleet = atom({ plugin: 'cockpit', key: 'fleet' } as const, {
   rows: [],
   refreshedAt: 0,
 } satisfies FleetView)
 
 /** Whether the list shows every session on this machine instead of only this repo's. Kept across hot reloads. */
-const allRepos = atom({ plugin: 'sessions-view', key: 'allRepos' } as const, false)
+const allRepos = atom({ plugin: 'cockpit', key: 'allRepos' } as const, false)
 
 // ---- data ------------------------------------------------------------------
 
@@ -460,37 +461,19 @@ const elapsed = (startedAt: number, now: number): string => {
   return h < 24 ? `${h}h${String(m % 60).padStart(2, '0')}` : `${Math.floor(h / 24)}d`
 }
 
-// The context bar matches token-usage's: the same thresholds and colors; on the terminal the same
-// Raster track filled to 1/8 of a cell, on the desktop the same rounded SVG track.
-const levelHex = (pct: number) => (pct >= 90 ? '#EF4444' : pct >= 75 ? '#FBBF24' : '#4ADE80')
+// The context bar is the usage band's bar (./bar): a Raster track on the terminal, an SVG one on the desktop.
 
-const TRACK = '#334155'
-const EIGHTHS = ' ▏▎▍▌▋▊▉█'
-const rgb = (hex: string) => parseInt(hex.slice(1), 16)
-const TRACK_RGB = rgb(TRACK)
+/** Terminal: `cells` wide, filled to 1/8 of a cell. */
+const barRaster = (pct: number, cells: number) => ({ cells: packCells(barCells(pct, cells, level(pct))), columns: cells })
 
-/** Terminal: token-usage's Raster track, a partial block's foreground over the track for 1/8-cell steps. */
-const barRaster = (pct: number, cells: number): { cells: string; columns: number } => {
-  const fill = Math.round(Math.max(0, Math.min(1, pct / 100)) * cells * 8)
-  const fg = rgb(levelHex(pct))
-  const words = new Uint32Array(cells * 3)
-  for (let i = 0; i < cells; i++) {
-    words.set([EIGHTHS.codePointAt(Math.max(0, Math.min(8, fill - i * 8)))!, fg, TRACK_RGB], i * 3)
-  }
-  return { cells: new Uint8Array(words.buffer).toBase64(), columns: cells }
-}
+const PX_PER_CELL = 7.9 // monospace advance at 13px, as the band's
 
-const PX_PER_CELL = 7.9 // monospace advance at 13px, as token-usage's CW
-
-/** Desktop: token-usage's rounded track (5px high, slate track, green → amber → red fill). */
+/** Desktop: the same rounded track, 14px tall. */
 const barSvg = (pct: number, cells: number): { svg: string; w: number } => {
   const w = Math.round(cells * PX_PER_CELL)
-  const c = levelHex(pct)
-  const filled = Math.max(0, Math.min(1, pct / 100)) * w
-  const fill = filled > 0 ? `<rect x="0" y="4.5" width="${Math.max(5, filled)}" height="5" rx="2.5" fill="${c}"/>` : ''
   return {
     w,
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="14" viewBox="0 0 ${w} 14"><style>:root{color-scheme:light dark;background:transparent}</style><rect x="0" y="4.5" width="${w}" height="5" rx="2.5" fill="${TRACK}"/>${fill}</svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="14" viewBox="0 0 ${w} 14"><style>:root{color-scheme:light dark;background:transparent}</style>${barRects(0, 4.5, w, pct, level(pct))}</svg>`,
   }
 }
 
@@ -515,7 +498,9 @@ const oneLine = (text: string, max: number): string => {
 
 // ---- hooks -------------------------------------------------------------------
 
-export const register: Register = on => {
+export const registerSessions: Register = on => {
+  // The poll's invalidate redraws every instance this plugin draws, so it also keeps the usage band's
+  // reset countdowns moving.
   on('session.start', async ($, e, next) => {
     await ensureCommand($)
     void $.ui.open({ id: PANE, title: TITLE })
@@ -528,6 +513,7 @@ export const register: Register = on => {
 
     return next(e)
   })
+
 
   // A hot load may miss session.start: the first prompt registers the command
   // and opens the pane as a person-driven open (any width).
@@ -659,7 +645,7 @@ export const register: Register = on => {
                     {line(busyKey === row.key ? `${meta} · removing…` : meta)}
                   </Text>
                 )}
-                {/* Context use, drawn like token-usage's 5h / 7d bars. */}
+                {/* Context use, the same bar as the usage band's 5h / 7d. */}
                 {track && (
                   <Box flexDirection="row" alignItems="center">
                     <Text dimColor>{`   ${model ? `${model} ` : ''}`}</Text>

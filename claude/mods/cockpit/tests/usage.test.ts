@@ -1,9 +1,11 @@
 import { expect, test } from 'claude-code/testing'
 
+import { decode, glyphs } from './raster'
+
 const NOW = Date.parse('2026-10-08T08:00:00Z')
 
 const band = (bodyColumns: number) => ({
-  plugin: 'token-usage',
+  plugin: 'cockpit',
   component: 'AbovePrompt',
   props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns, scroll: { offset: 0, bodyRows: 10 }, view: {} },
 } as const)
@@ -17,15 +19,6 @@ const MEASURE = {
   cost: { usd: 1.234 },
   changed: ['rateLimits', 'cost'],
 } as const
-
-// the Raster's cells as [glyph, foreground, background]
-const decode = (cells: string) => {
-  const w = new Uint32Array(Uint8Array.fromBase64(cells).buffer)
-  return Array.from({ length: w.length / 3 }, (_, i) => [String.fromCodePoint(w[i * 3]), w[i * 3 + 1], w[i * 3 + 2]] as const)
-}
-
-// the Raster's glyphs as a string, colors dropped
-const glyphs = (cells: string) => decode(cells).map(([g]) => g).join('')
 
 const SPENT = 0x64748b
 const AHEAD = 0x334155
@@ -43,7 +36,7 @@ test('terminal draws the usage as one Raster row', async ($, on) => {
   on('session.measure', (_$, e) => ({ changed: e.changed }))
   await $.session.measure(MEASURE)
   const ui = await $.ui.mount({ ...band(200), surface: 'terminal' })
-  const r = await ui.find({ type: 'Raster', key: 'token-usage' })
+  const r = await ui.find({ type: 'Raster', key: 'usage' })
   const s = glyphs(r!.props.cells)
   // 42% of 12 cells is 40.3 eighths: five full blocks; 91% is 87.4: ten and 7/8
   expect(s).toContain('5h █████        42% ↻ 2h 05m')
@@ -66,7 +59,7 @@ test('terminal drops the cache pill first when the band is narrow', async ($, on
   on('session.measure', (_$, e) => ({ changed: e.changed }))
   await $.session.measure(MEASURE)
   const ui = await $.ui.mount({ ...band(90), surface: 'terminal' })
-  const r = await ui.find({ type: 'Raster', key: 'token-usage' })
+  const r = await ui.find({ type: 'Raster', key: 'usage' })
   const s = glyphs(r!.props.cells)
   expect(r!.props.columns).toBeLessThanOrEqual(90)
   expect(s).toContain('5h')
@@ -89,5 +82,5 @@ test('terminal shows a low use as a sliver, not an empty bar', async ($, on) => 
   await $.session.measure({ ...MEASURE, rateLimits: [{ kind: 'seven_day', percentUsed: 3, resetsAt: MEASURE.rateLimits[1].resetsAt }] })
   const ui = await $.ui.mount({ ...band(200), surface: 'terminal' })
   // 3% of 96 eighths rounds to 3: a three-eighths block in the first cell
-  expect(glyphs((await ui.find({ type: 'Raster', key: 'token-usage' }))!.props.cells)).toContain('7d ▍            3%')
+  expect(glyphs((await ui.find({ type: 'Raster', key: 'usage' }))!.props.cells)).toContain('7d ▍            3%')
 })
