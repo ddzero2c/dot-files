@@ -39,7 +39,8 @@ const AGENTS_JSON = JSON.stringify([
 
 type Body = Extract<Parameters<typeof test>[1], (...args: never[]) => unknown>
 
-const wire = (on: Parameters<Body>[1], calls: string[][], agentsJson = AGENTS_JSON, withCopy = true) => {
+// `prLinks`: what a transcript's pr-link scan answers (its size, then the records), for every transcript
+const wire = (on: Parameters<Body>[1], calls: string[][], agentsJson = AGENTS_JSON, withCopy = true, prLinks = '0') => {
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.toast', () => ({ value: undefined }))
   on('session.id', () => ({ value: 'ba1a6754-0000' }))
@@ -65,6 +66,7 @@ const wire = (on: Parameters<Body>[1], calls: string[][], agentsJson = AGENTS_JS
       value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
     })
     if (e.argv[0] === 'claude') return ok(agentsJson)
+    if (e.argv[0] === 'sh') return ok(prLinks)
     if (e.argv[0] === 'git') return ok(e.argv[2]?.includes('feature-x') ? 'ryder/feature-x\n' : 'master\n')
     if (e.argv[0] === 'tail') {
       // The job's original transcript ended in a compaction: its tail points at the live file.
@@ -102,7 +104,8 @@ test('lists this repo\'s sessions, blocked first, with PR links and the current 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect(await ui.find({ type: 'Button', text: /check pasted screenshot/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /pick a branch/ })).toBeDefined()
-  expect(await ui.find({ type: 'Markdown', key: 'links:ba1a6754', text: /\[#6220\]\(https:\/\/github\.com\/o\/r\/pull\/6220\)/ })).toBeDefined()
+  // what the job's state.json reports is drawn as a reference, its glyph grey for a status not looked up
+  expect(await ui.find({ type: 'Button', key: 'ref:ba1a6754:https://github.com/o/r/pull/6220:open', text: '#6220' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^NEEDS INPUT$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^RUNNING$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /fable 1m/ })).toBeDefined()
@@ -149,7 +152,7 @@ test('pressing a row copies the command that opens it; pressing a PR link opens 
   expect(copied).toEqual(['claude --resume 10a5276a-0000'])
   expect(calls.some(c => c[0] === 'tmux')).toBe(false)
 
-  await ui.press({ key: 'links:ba1a6754', link: { href: 'https://github.com/o/r/pull/6220' } })
+  await ui.press({ key: 'ref:ba1a6754:https://github.com/o/r/pull/6220:open' })
   expect(calls.some(c => c[0] === 'open' && c[1] === 'https://github.com/o/r/pull/6220')).toBe(true)
 
   // pressing this session's own row only says so
@@ -246,5 +249,51 @@ test('the scope toggle drops --cwd to list every session, names each row\'s repo
   await ui.press({ key: 'scope' })
   expect(agents().every(c => c.includes('--cwd'))).toBe(true)
   expect(await ui.find({ type: 'Button', key: 'scope', text: /\[repo\]/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a row shows its session\'s references: a glyph colored by where each stands, its id a Button that opens it', async ($, on) => {
+  const calls: string[][] = []
+  wire(on, calls)
+  const PR = 'https://github.com/o/r/pull/6220'
+  const ISSUE = 'https://linear.app/koca/issue/KOC-2124'
+  // the job's cockpit kept the PR its state.json also reports, and the issue its branch names
+  on('store.get', (_$, e) => ({
+    value: e.key === 'references:ba1a6754-0000'
+      ? [
+          { url: PR, kind: 'pr', service: 'github', label: '#6220', at: 1, status: { state: 'merged', text: 'merged', checks: 'pass' } },
+          { url: ISSUE, kind: 'issue', service: 'linear', label: 'KOC-2124', fromBranch: true, at: 1, status: { state: 'started', text: 'In Progress' } },
+        ]
+      : undefined,
+  }))
+  await openPane($)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+
+  expect(await ui.find({ type: 'Button', key: `ref:ba1a6754:${PR}:open`, text: '#6220' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', key: `ref:ba1a6754:${ISSUE}:open`, text: 'KOC-2124' })).toBeDefined()
+  const glyphs = await ui.findAll({ type: 'Text', text: /^[⇄◆]$/ })
+  expect(glyphs.map(g => [g.text, g.props.color])).toEqual([['⇄', '#A78BFA'], ['◆', '#FBBF24']])
+  expect(await ui.find({ type: 'Text', text: '✓' })).toBeDefined()
+  // the job's own report of the same PR is not drawn twice
+  expect(await ui.findAll({ type: 'Button', text: '#6220' })).toHaveLength(1)
+
+  await ui.press({ key: `ref:ba1a6754:${PR}:open` })
+  expect(calls.some(c => c[0] === 'open' && c[1] === PR)).toBe(true)
+  await ui.unmount()
+})
+
+
+test('a session with no cockpit of its own shows the PRs Claude Code recorded in its transcript', async ($, on) => {
+  const calls: string[][] = []
+  const PR = 'https://github.com/o/r/pull/77'
+  wire(on, calls, AGENTS_JSON, true, ['900', JSON.stringify({ type: 'pr-link', prUrl: PR, prNumber: 77, prRepository: 'o/r', timestamp: '2026-10-08T07:00:00Z' })].join('\n'))
+  await openPane($)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  // the interactive session (no store of references): its transcript, read from the start
+  expect(await ui.find({ type: 'Button', key: `ref:10a5276a-0000:${PR}:open`, text: '#77' })).toBeDefined()
+  const scan = calls.find(c => c[0] === 'sh')!
+  expect(scan.slice(4)).toEqual(['1', '/Users/me/.claude/projects/-Users-me-repo-koca--claude-worktrees-feature-x/10a5276a-0000.jsonl'])
+  // the background job is not read: its children are the same records, already there
+  expect(calls.filter(c => c[0] === 'sh')).toHaveLength(1)
   await ui.unmount()
 })

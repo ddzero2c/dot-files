@@ -1,9 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface as Engine, Register, RenderSurface } from 'claude-code'
 
-import type { FleetLink, FleetRow, FleetView } from '../types'
+import type { FleetLink, FleetRow, FleetView, Reference } from '../types'
 import { barCells, barRects, level, packCells } from './bar'
+import { refLook, refOfUrl } from './references'
 import { cells, fit, pad } from './text'
+import { parsePrLinkScan, prLinkScan, transcriptPath } from './transcript'
 
 const PANE = 'sessions-view'
 const TITLE = 'Sessions'
@@ -40,7 +42,6 @@ type AgentsJsonRow = {
 type JobState = {
   state?: string
   needs?: string | null
-  detail?: string | null
   children?: Array<{ id?: string; href?: string; kind?: string }> | null
 }
 
@@ -109,7 +110,6 @@ const branchOf = async ($: Engine, cwd: string): Promise<string | undefined> => 
 }
 
 /** The project folder a transcript lives under: the cwd with every `/` and `.` turned into `-`. */
-const projectSlug = (cwd: string): string => cwd.replace(/[/.]/g, '-')
 
 /**
  * The context window a model id counts against, as the engine's model table
@@ -147,7 +147,7 @@ const contextOf = async ($: Engine, cwd: string, sessionId: string): Promise<Fle
   if (!home) return undefined
   let id = sessionId
   for (let hop = 0; hop < 6; hop++) {
-    const path = `${home}/.claude/projects/${projectSlug(cwd)}/${id}.jsonl`
+    const path = transcriptPath(home, cwd, id)
     const r = await $.process.run(['tail', '-c', '262144', path], { timeoutMs: 3000 }).catch(() => undefined)
     if (!r || r.exitCode !== 0) return undefined
     const lines = r.stdout.split('\n')
@@ -181,6 +181,32 @@ const contextOf = async ($: Engine, cwd: string, sessionId: string): Promise<Fle
     id = next
   }
   return undefined
+}
+
+/** What each transcript was read for pr-links: how far, what it found, and when. Module state: a reload reads again. */
+const prLinks = new Map<string, { offset: number; urls: string[]; at: number }>()
+const PR_LINK_EVERY_MS = 30_000
+
+/**
+ * The PRs Claude Code recorded in a session's transcript (its pr-link records, as the agent view's PR
+ * labels and a background job's children come from): for a session whose cockpit keeps none, read
+ * from where the last read stopped, at most every PR_LINK_EVERY_MS.
+ */
+const prLinksOf = async ($: Engine, cwd: string, sessionId: string): Promise<FleetLink[]> => {
+  if (!home) return []
+  const path = transcriptPath(home, cwd, sessionId)
+  const seen = prLinks.get(path) ?? { offset: 0, urls: [], at: 0 }
+  const now = Date.now()
+  if (now - seen.at >= PR_LINK_EVERY_MS) {
+    const r = await $.process.run(prLinkScan(path, seen.offset), { timeoutMs: 10_000 }).catch(() => undefined)
+    if (r?.exitCode === 0) {
+      const { size, links } = parsePrLinkScan(r.stdout)
+      const urls = [...seen.urls, ...links.map(l => l.url).filter(u => !seen.urls.includes(u))]
+      prLinks.set(path, { offset: size, urls, at: now })
+      seen.urls = urls
+    }
+  }
+  return [...new Set(seen.urls)].map(href => ({ id: href.split('/').at(-1) ?? href, href, kind: 'pr' }))
 }
 
 /** This session's own context, live from the engine. */
@@ -260,12 +286,18 @@ const refresh = async ($: Engine): Promise<void> => {
     const rows: FleetRow[] = await Promise.all(
       parsed.map(async r => {
         const isSelf = r.sessionId === selfId
-        const [job, branch, context, where] = await Promise.all([
+        const [job, branch, context, where, kept] = await Promise.all([
           r.kind === 'background' && r.id ? readJob($, r.id) : Promise.resolve({} as JobState),
           branchOf($, r.cwd),
           isSelf ? ownContext($) : contextOf($, r.cwd, r.sessionId),
           r.kind === 'interactive' && !isSelf ? whereOf($, r.pid) : Promise.resolve(undefined),
+          // each session's cockpit keeps its references under its id (./references)
+          $.store.get(`references:${r.sessionId}`).catch(() => undefined),
         ])
+        const refs = Array.isArray(kept) ? (kept as Reference[]) : []
+        // a session with no cockpit of its own: the PRs Claude Code recorded in its transcript
+        const recorded = refs.length === 0 && r.kind === 'interactive' ? await prLinksOf($, r.cwd, r.sessionId) : []
+
         return {
           key: r.id ?? r.sessionId,
           sessionId: r.sessionId,
@@ -278,12 +310,15 @@ const refresh = async ($: Engine): Promise<void> => {
           state: job.state ?? r.state,
           status: r.status,
           needs: job.needs ?? undefined,
-          detail: job.detail ?? undefined,
-          links: (job.children ?? []).flatMap((c): FleetLink[] =>
-            c.href ? [{ id: c.id ?? c.href, href: c.href, kind: c.kind ?? 'link' }] : [],
-          ),
+          links: [
+            ...(job.children ?? []).flatMap((c): FleetLink[] =>
+              c.href ? [{ id: c.id ?? c.href, href: c.href, kind: c.kind ?? 'link' }] : [],
+            ),
+            ...recorded,
+          ],
           ...(context ? { context } : {}),
           ...(where ? { where } : {}),
+          ...(refs.length > 0 ? { refs } : {}),
           isSelf,
         }
       }),
@@ -476,7 +511,7 @@ export const registerSessions: Register = on => {
     // First draw: size the dock to a fifth of the terminal (an unasked open has no width to ask with).
     if (!isSized && e.props.placement === 'dock') void openSized($, e.viewport?.columns)
     const els = $.ui.resolve(e)
-    const { Box, Button, Markdown, Text } = els
+    const { Box, Button, Text } = els
     // The terminal's table carries an Svg it never draws, so ask the surface, not the table.
     const Svg = e.surface !== 'terminal' && 'Svg' in els ? els.Svg : undefined
     const Raster = 'Raster' in els ? els.Raster : undefined
@@ -510,7 +545,7 @@ export const registerSessions: Register = on => {
         {sorted.length === 0 && <Text dimColor>{empty}</Text>}
         {sorted.map(row => {
           const t = tone(row)
-          const note = t.rank === 0 ? row.needs : t.rank === 1 ? row.detail : undefined
+          const note = t.rank === 0 ? row.needs : undefined
           const line = (text: string) => fit(text, width)
           const pct =
             row.context && row.context.window > 0
@@ -529,6 +564,14 @@ export const registerSessions: Register = on => {
             const b = barRaster(pct, trackCells)
             track = <Raster key={`ctx:${row.key}`} columns={b.columns} rows={1} cells={b.cells} />
           }
+          // what Claude Code recorded (a job's state.json children, a transcript's pr-links) joins the
+          // references the session's cockpit kept, drawn the same with no status
+          const refs: Reference[] = [
+            ...(row.refs ?? []),
+            ...row.links
+              .filter(l => !row.refs?.some(r => r.url === l.href))
+              .map(l => ({ ...refOfUrl(l.href, linkLabel(l)), at: 0 })),
+          ]
           const isNewGroup = title !== group
           group = title
           const self = row.isSelf
@@ -566,16 +609,20 @@ export const registerSessions: Register = on => {
                     {track}
                   </Box>
                 )}
-                {row.links.length > 0 ? (
-                  <Box flexDirection="row">
-                    <Text>{'   '}</Text>
-                    {/* Markdown draws these in the reply's link style; a click comes back here to open the browser. */}
-                    <Markdown
-                      key={`links:${row.key}`}
-                      text={row.links.map(l => `[${linkLabel(l)}](${l.href})`).join(' ')}
-                      pressableLinks={row.links.map(l => l.href)}
-                      onLinkPress={link => void openLink($, link.href)}
-                    />
+                {/* The session's references: where each stands by its glyph's color, its id a Button that opens it, */}
+                {/* lit under the pointer and the focus as a row's name is. */}
+                {refs.length > 0 ? (
+                  <Box flexDirection="row" flexWrap="wrap" columnGap={2} paddingLeft={3}>
+                    {refs.map(r => {
+                      const look = refLook(r)
+                      return (
+                        <Box key={`ref:${row.key}:${r.url}`} flexDirection="row" columnGap={1}>
+                          <Text color={look.color}>{look.glyph}</Text>
+                          <Button key={`ref:${row.key}:${r.url}:open`} plain label={r.label} onPress={() => void openLink($, r.url)} />
+                          {look.mark ? <Text color={look.mark[1]}>{look.mark[0]}</Text> : null}
+                        </Box>
+                      )
+                    })}
                   </Box>
                 ) : null}
                 {note ? (

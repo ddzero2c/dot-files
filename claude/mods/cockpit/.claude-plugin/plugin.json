@@ -1,7 +1,7 @@
 {
   "name": "cockpit",
   "version": "0.2.0",
-  "description": "Instruments for Claude Code: a band above the prompt with the 5h / 7d limits, token totals and cost, and a Sessions pane mirroring `claude agents`, both drawing the same bars",
+  "description": "Instruments for Claude Code: a band above the prompt with the 5h / 7d limits, token totals and cost, and a Sessions pane mirroring `claude agents`, each session with its references (PRs, Linear issues, connector links) and their live status",
   "types": "./types/index.d.ts",
   "author": {
     "name": "Ryder"
