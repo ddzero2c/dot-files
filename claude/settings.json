@@ -1,11 +1,12 @@
 {
   "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5-5",
     "CLAUDE_CODE_PLUGIN_DIRS": "~/repo/dot-files/claude/mods/sessions-view"
   },
   "permissions": {
     "defaultMode": "auto"
   },
-  "model": "fable[1m]",
+  "model": "opus",
   "statusLine": {
     "type": "command",
     "command": "bash ~/bin/claude-statusline"
@@ -39,6 +40,7 @@
       "effortLevel": "medium"
     }
   },
+  "advisorModel": "fable",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
