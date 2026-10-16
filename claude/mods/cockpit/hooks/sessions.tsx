@@ -449,11 +449,10 @@ const toggleScope = async ($: Engine) => {
 // ---- hooks -------------------------------------------------------------------
 
 export const registerSessions: Register = on => {
-  // The poll's invalidate redraws every instance this plugin draws, so it also keeps the usage band's
-  // reset countdowns moving.
+  // The pane opens only on /sessions-view. The poll's invalidate redraws every instance this plugin
+  // draws, so it also keeps the usage band's reset countdowns moving.
   on('session.start', async ($, e, next) => {
     await ensureCommand($)
-    void $.ui.open({ id: PANE, title: TITLE })
     void refresh($)
 
     $.clock.every(POLL_MS, async () => {
@@ -465,11 +464,9 @@ export const registerSessions: Register = on => {
   })
 
 
-  // A hot load may miss session.start: the first prompt registers the command
-  // and opens the pane as a person-driven open (any width).
+  // A hot load may miss session.start: the first prompt registers the command.
   on('prompt.submit', async ($, e, next) => {
     await ensureCommand($)
-    void $.ui.open({ id: PANE, title: TITLE })
 
     return next(e)
   }).catch(($, e, next) => next(e))
