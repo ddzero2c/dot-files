@@ -1,4 +1,4 @@
-// The one bar both the usage band and the Sessions pane draw: the same thresholds and colors, a rounded
+// The usage band's bar: the thresholds and colors, a rounded
 // SVG track on the desktop, and on the terminal a Raster track filled to 1/8 of a cell.
 
 export const TRACK = '#334155'

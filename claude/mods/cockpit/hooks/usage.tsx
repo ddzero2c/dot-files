@@ -9,6 +9,8 @@ const snap = atom({ plugin: 'cockpit', key: 'snap' } as const, EMPTY)
 
 
 const H = 3600_000
+/** The countdowns read in minutes, so a redraw every half minute keeps them current. */
+const TICK_MS = 30_000
 const k = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : `${n}`)
 
 const left = (iso: string | undefined, now: number) => {
@@ -251,6 +253,11 @@ const toText = (pills: Pill[]) =>
   pills.map(p => charPill(p).map(runs => runs.map(([s]) => s).join('')).join(' ')).join('  │  ')
 
 export const registerUsage: Register = on => {
+  // Redraw on a tick so the reset countdowns keep moving between responses.
+  on('session.start', async ($, e, next) => {
+    $.clock.every(TICK_MS, () => $.ui.invalidate('ui.render'))
+    return next(e)
+  })
 
   on('session.measure', async ($, e, next) => {
     const f = e.rateLimits.find(r => r.kind === 'five_hour')
